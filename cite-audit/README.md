@@ -22,7 +22,7 @@ Limites connues du module d'analyse : le JavaScript des pages n'est pas exécut�
 
 ## Prérequis
 
-- Node.js 20.9 ou plus récent (testé avec 22)
+- Node.js 20.18 ou plus récent (testé avec 22)
 - pnpm 10 (`corepack enable`)
 - PostgreSQL 16 : via Docker (`docker compose up -d`) ou installé localement
 
