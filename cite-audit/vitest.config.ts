@@ -1,7 +1,11 @@
 import path from "node:path";
 import { defineConfig } from "vitest/config";
 
-const alias = { "@": path.resolve(import.meta.dirname, "src") };
+const alias = {
+  "@": path.resolve(import.meta.dirname, "src"),
+  // « server-only » refuse tout import hors serveur React ; les tests tournent dans Node, c'est sans risque.
+  "server-only": path.resolve(import.meta.dirname, "tests/stubs/empty.ts"),
+};
 
 export default defineConfig({
   test: {

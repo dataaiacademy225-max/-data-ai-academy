@@ -17,7 +17,7 @@ export const PROJECT_LIMITS = {
 } as const;
 
 // Domaines de premier niveau réservés ou internes : jamais un site public auditable.
-const RESERVED_TLDS = new Set([
+export const RESERVED_TLDS: ReadonlySet<string> = new Set([
   "localhost",
   "local",
   "internal",

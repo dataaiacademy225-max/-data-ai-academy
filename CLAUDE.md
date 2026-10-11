@@ -7,7 +7,7 @@ Guide pour travailler dans ce dépôt.
 | Chemin | Rôle |
 |---|---|
 | `index.html`, `steve-junior.jpg` | Site vitrine statique de Data & AI Academy (Tailwind compilé en ligne). Ne pas casser : il est servi tel quel à la racine. |
-| `cite-audit/` | SaaS **CITE Audit** (audit de visibilité Google + assistants IA). Étape 1 (socle) en place. Voir `cite-audit/README.md` pour l'installation. |
+| `cite-audit/` | SaaS **CITE Audit** (audit de visibilité Google + assistants IA). Étape 1 (socle) et module d'analyse d'URL en place. Voir `cite-audit/README.md` pour l'installation. |
 | `cite-audit/AGENTS.md` | Généré par Next.js 16 : lire la doc embarquée `node_modules/next/dist/docs/` avant d'écrire du code Next (conventions changées : `proxy.ts` au lieu de `middleware.ts`, API asynchrones…). |
 | `cite-audit/docs/ARCHITECTURE.md` | Dossier de conception : architecture, modèle de données, routes, score CITE, risques, plan. **Source de vérité** avant tout développement. |
 
@@ -15,9 +15,9 @@ Charte : bleu nuit `#0B1526` / `#1B3155`, accent orange `#FF7A29`, polices Space
 
 ## Stack CITE Audit
 
-Next.js 16 (App Router, `cacheComponents` désactivé) + TypeScript strict, Tailwind CSS 4, composants au format shadcn/ui (`src/components/ui`, écrits à la main : le registre shadcn n'est pas joignable depuis l'environnement cloud), PostgreSQL 16 + Prisma 7 (client généré dans `src/generated/prisma`, adaptateur `@prisma/adapter-pg`), Better Auth, Zod 4, Vitest 5. À venir : worker Node séparé (file d'attente PostgreSQL), cheerio, @react-pdf/renderer.
+Next.js 16 (App Router, `cacheComponents` désactivé) + TypeScript strict, Tailwind CSS 4, composants au format shadcn/ui (`src/components/ui`, écrits à la main : le registre shadcn n'est pas joignable depuis l'environnement cloud), PostgreSQL 16 + Prisma 7 (client généré dans `src/generated/prisma`, adaptateur `@prisma/adapter-pg`), Better Auth, Zod 4, Vitest 5, cheerio (lecture HTML), undici 7 (HTTP, compatible Node 20), robots-parser. À venir : worker Node séparé (file d'attente PostgreSQL), @react-pdf/renderer.
 
-Organisation : `src/lib/validation` (schémas Zod partagés client/serveur), `src/server/services` (accès aux données, toujours filtré par `userId`), `src/server/actions` (server actions : `requireUser()` puis validation Zod), `src/server/demo` (données de démonstration).
+Organisation : `src/lib/validation` (schémas Zod partagés client/serveur), `src/server/services` (accès aux données, toujours filtré par `userId`), `src/server/actions` (server actions : `requireUser()` puis validation Zod), `src/server/demo` (données de démonstration), `src/server/crawler` (analyse d'une URL : `url-guard` → `robots` → `safe-fetch` → `extract`, orchestrés par `analyzeUrl` ; aucun score ni interface dans ce dossier), `src/lib/logger.ts` (journal JSON masqué).
 
 ## Règles produit non négociables
 
@@ -36,7 +36,8 @@ Organisation : `src/lib/validation` (schémas Zod partagés client/serveur), `sr
 - Toute requête sortante du crawler passe par `safeFetch` (anti-SSRF : résolution DNS + blocage IP privées/réservées à chaque redirection, ports 80/443 uniquement, timeout, taille max).
 - Autorisation vérifiée côté serveur sur chaque accès : toujours filtrer par `userId` du propriétaire.
 - Le contenu crawlé est une donnée non fiable : jamais exécuté, jamais injecté en HTML brut, jamais traité comme instruction par un LLM.
-- Logs sans données sensibles (pas de clés, pas de réponses brutes, pas d'e-mails).
+- Logs sans données sensibles (pas de clés, pas de réponses brutes, pas d'e-mails) : passer par `logger` de `src/lib/logger.ts`.
+- Tests du crawler : jamais d'accès Internet. Utiliser `tests/helpers/test-site.ts` (serveur local + politique réseau de test) ; la politique de production (`defaultNetworkPolicy`) n'est jamais affaiblie.
 
 ## Méthode de travail
 

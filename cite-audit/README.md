@@ -6,7 +6,7 @@ SaaS d'audit des signaux observables qui peuvent influencer la visibilité d'une
 
 Conception complète : [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-## État actuel : étape 1 (socle)
+## État actuel : étape 1 (socle) + module d'analyse d'URL
 
 - Inscription, connexion, déconnexion (Better Auth, sessions en base).
 - Tableau de bord (vide ou liste des projets).
@@ -14,7 +14,11 @@ Conception complète : [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 - Modèles : `User`, `Project`, `Audit`, `PageAnalysis`, `Finding`, `AiQueryResult` (+ tables d'authentification).
 - Données de démonstration isolées (compte `demo@example.com`, projets et audits `isDemo`).
 
-Pas encore : crawler, calcul du score, rapport PDF, requêtes IA.
+- Module d'analyse d'une URL (`src/server/crawler`, côté serveur uniquement) : blocage des adresses locales/privées (y compris via DNS ou redirection), robots.txt, délai de 10 s, 2 Mo maximum, 5 redirections maximum, extraction des faits (title, meta, H1/H2, texte visible, liens, canonical, robots, JSON-LD, Open Graph, CTA, preuves).
+
+Pas encore : exploration de plusieurs pages, worker, calcul du score, rapport PDF, requêtes IA, interface d'audit.
+
+Limites connues du module d'analyse : le JavaScript des pages n'est pas exécuté (les sites rendus côté client sont signalés `likelyClientRendered`) et un texte masqué par une feuille de style n'est pas détecté. Les CTA et preuves sont des repérages automatiques, chacun accompagné de l'extrait exact pour vérification.
 
 ## Prérequis
 
