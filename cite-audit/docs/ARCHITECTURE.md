@@ -1,6 +1,8 @@
 # CITE Audit — Dossier de conception (v0.1)
 
-> Statut : **proposition à valider**. Aucun code applicatif n'est écrit tant que ce document n'est pas validé.
+> Statut : **validé**. Étape 1 (socle) en place. Le schéma de référence est `prisma/schema.prisma` ; la §3.2 ci-dessous est la proposition initiale.
+>
+> Écarts retenus à l'étape 1 : modèles nommés `PageAnalysis` et `AiQueryResult` ; concurrents (`competitors`, JSON) et requêtes GEO (`geoQueries`, tableau) stockés sur `Project` plutôt qu'en tables séparées ; `isDemo` sur `Project` et `Audit` (clé étrangère composite) pour isoler les données de démonstration ; `CriterionResult` et `ApiCredential` arriveront aux étapes 3 et 5 ; `cacheComponents` de Next.js 16 désactivé (rendu dynamique classique, plus simple pour des pages authentifiées).
 >
 > CITE Audit mesure des signaux observables. Il ne garantit aucune position dans Google ni aucune citation ou recommandation par une IA. Le score CITE est un indicateur interne à Data & AI Academy.
 
@@ -193,12 +195,11 @@ cite-audit/
 ### 3.1 Schéma relationnel
 
 ```
-User 1─n Project 1─n Audit 1─n AuditPage
+User 1─n Project 1─n Audit 1─n PageAnalysis
   │          │          ├──1─n CriterionResult   (CITE + GEO)
   │          │          ├──1─n Finding
-  │          │          └──1─n AiQueryRun
-  │          ├──1─n Competitor
-  │          └──1─n GeoQuery
+  │          │          └──1─n AiQueryResult
+  │          (concurrents et requêtes GEO : champs JSON / tableau du projet)
   └──1─n ApiCredential
 (+ tables Session / Account / Verification gérées par Better Auth)
 ```
@@ -287,15 +288,15 @@ model Audit {
   inputSnapshot   Json        // copie des données projet au lancement (URL, cible, concurrents, requêtes)
   reportSnapshot  Json?       // rapport figé (synthèse, plans, limites)
   errorCode       String?     // code interne, jamais de trace brute
-  pages           AuditPage[]
+  pages           PageAnalysis[]
   criteria        CriterionResult[]
   findings        Finding[]
-  aiRuns          AiQueryRun[]
+  aiResults       AiQueryResult[]
   @@index([projectId, queuedAt])
   @@index([status, queuedAt])
 }
 
-model AuditPage {
+model PageAnalysis {
   id            String   @id @default(cuid())
   auditId       String
   audit         Audit    @relation(fields: [auditId], references: [id], onDelete: Cascade)
@@ -360,7 +361,7 @@ model ApiCredential {
   @@index([userId])
 }
 
-model AiQueryRun {
+model AiQueryResult {
   id                  String     @id @default(cuid())
   auditId             String
   audit               Audit      @relation(fields: [auditId], references: [id], onDelete: Cascade)

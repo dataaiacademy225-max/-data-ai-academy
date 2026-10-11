@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+/* Charte Data & AI Academy : bleu nuit + accent orange. Jetons au format shadcn/ui. */
+:root {
+  --background: #f7f8fb;
+  --foreground: #0b1526;
+  --card: #ffffff;
+  --card-foreground: #0b1526;
+  --muted: #eef1f6;
+  --muted-foreground: #5b6578;
+  --primary: #0b1526;
+  --primary-foreground: #ffffff;
+  --accent: #ff7a29;
+  --accent-foreground: #0b1526;
+  --destructive: #c62828;
+  --destructive-foreground: #ffffff;
+  --border: #dde2ea;
+  --input: #cfd6e1;
+  --ring: #ff7a29;
+  --radius: 0.625rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #060b15;
+    --foreground: #e8ecf3;
+    --card: #0b1526;
+    --card-foreground: #e8ecf3;
+    --muted: #13213a;
+    --muted-foreground: #9aa6ba;
+    --primary: #ff7a29;
+    --primary-foreground: #0b1526;
+    --accent: #ff7a29;
+    --accent-foreground: #0b1526;
+    --destructive: #ef5350;
+    --destructive-foreground: #0b1526;
+    --border: #1b3155;
+    --input: #26406b;
+    --ring: #ff7a29;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-md: var(--radius);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-space-grotesk);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}

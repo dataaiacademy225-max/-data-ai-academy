@@ -1,0 +1,227 @@
+// Schéma CITE Audit — socle MVP.
+// Voir docs/ARCHITECTURE.md §3 pour la justification des choix.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Énumérations ────────────────────────────────────────────────
+
+enum AuditStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  PARTIAL
+  FAILED
+  CANCELED
+}
+
+enum Pillar {
+  CLARIFIER
+  INDEXER
+  TUNNEL
+  ENCLENCHER
+  GEO
+}
+
+enum Priority {
+  CRITIQUE
+  IMPORTANT
+  RECOMMANDE
+}
+
+enum AiProviderKind {
+  OPENAI_COMPATIBLE
+  PERPLEXITY
+  ANTHROPIC
+  GEMINI
+}
+
+// ─── Authentification (tables attendues par Better Auth) ─────────
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  projects      Project[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String? // haché par Better Auth, jamais en clair
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ─── Domaine CITE Audit ──────────────────────────────────────────
+
+model Project {
+  id                  String    @id @default(cuid())
+  userId              String
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName         String
+  siteUrl             String // URL normalisée https://…
+  domain              String // hôte, périmètre du futur crawl
+  sector              String
+  country             String // ISO 3166-1 alpha-2
+  city                String?
+  primaryTarget       String
+  competitors         Json      @default("[]") // [{ name, url? }] validé par Zod
+  geoQueries          String[]  @default([])
+  ownershipAttestedAt DateTime
+  // Données de démonstration : jamais créées depuis l'interface, uniquement par le seed.
+  isDemo              Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  audits              Audit[]
+
+  // Permet la clé étrangère composite Audit(projectId, isDemo) → Project(id, isDemo).
+  @@unique([id, isDemo])
+  @@index([userId, createdAt])
+}
+
+model Audit {
+  id              String          @id @default(cuid())
+  projectId       String
+  // Toujours égal au isDemo du projet, garanti par la clé étrangère composite :
+  // un audit réel ne peut pas être rattaché à un projet de démonstration, et inversement.
+  isDemo          Boolean         @default(false)
+  project         Project         @relation(fields: [projectId, isDemo], references: [id, isDemo], onDelete: Cascade, onUpdate: Cascade)
+  status          AuditStatus     @default(QUEUED)
+  scoringVersion  String
+  attempts        Int             @default(0)
+  lockedAt        DateTime?
+  queuedAt        DateTime        @default(now())
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  // Résultats : null tant que l'audit n'a pas réellement été calculé.
+  scoreTotal      Int?
+  scoreClarifier  Float?
+  scoreIndexer    Float?
+  scoreTunnel     Float?
+  scoreEnclencher Float?
+  geoIndex        Int?
+  coverage        Float?
+  inputSnapshot   Json // copie des données du projet au lancement
+  reportSnapshot  Json?
+  errorCode       String?
+  pages           PageAnalysis[]
+  findings        Finding[]
+  aiResults       AiQueryResult[]
+
+  @@index([projectId, queuedAt])
+  @@index([status, queuedAt])
+}
+
+model PageAnalysis {
+  id            String   @id @default(cuid())
+  auditId       String
+  audit         Audit    @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  requestedUrl  String
+  finalUrl      String?
+  httpStatus    Int?
+  redirectChain Json     @default("[]") // [{ url, status }]
+  pageType      String? // home | offer | about | contact | case-study | blog | faq | other
+  robotsAllowed Boolean
+  bytes         Int?
+  fetchMs       Int?
+  facts         Json? // faits observés (title, meta, h1…), jamais le HTML brut
+  fetchError    String? // TIMEOUT | TOO_LARGE | BLOCKED_SSRF | ROBOTS_DISALLOWED | HTTP_ERROR | NOT_HTML
+  analyzedAt    DateTime @default(now())
+
+  @@index([auditId])
+}
+
+model Finding {
+  id             String    @id @default(cuid())
+  auditId        String
+  audit          Audit     @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  pillar         Pillar
+  criterionCode  String
+  priority       Priority
+  observation    String // constat
+  evidence       Json // preuves observées + URL(s) concernées
+  impact         String // impact potentiel, formulation prudente
+  recommendation String
+  effort         String? // faible | moyen | élevé
+  dismissedAt    DateTime? // marqué « faux positif » par l'utilisateur
+  createdAt      DateTime  @default(now())
+
+  @@index([auditId, priority])
+}
+
+model AiQueryResult {
+  id                   String         @id @default(cuid())
+  auditId              String
+  audit                Audit          @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  query                String
+  askedAt              DateTime       @default(now())
+  provider             AiProviderKind
+  model                String // identifiant renvoyé par l'API
+  brandDetected        String? // alias effectivement trouvé, ou null
+  brandMentioned       Boolean
+  brandRecommended     Boolean // uniquement si formulation explicite de recommandation
+  approxPosition       Int?
+  positionRatio        Float?
+  competitorsMentioned Json           @default("[]")
+  sources              Json           @default("[]") // uniquement les sources réellement retournées
+  rawResponse          String // réponse brute, jamais modifiée
+  confidence           Float
+  errorCode            String?
+  errorMessage         String?
+
+  @@index([auditId])
+}

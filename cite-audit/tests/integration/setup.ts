@@ -1,0 +1,16 @@
+import { afterAll, beforeEach } from "vitest";
+import { getTestDatabaseUrl } from "./test-db";
+
+// Doit précéder tout import de "@/lib/db" : le client Prisma lit DATABASE_URL au premier usage.
+process.env.DATABASE_URL = getTestDatabaseUrl();
+
+const { prisma } = await import("@/lib/db");
+
+beforeEach(async () => {
+  // Les suppressions en cascade vident projets, audits, pages, problèmes et résultats IA.
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE "user", "verification" CASCADE');
+});
+
+afterAll(async () => {
+  await prisma.$disconnect();
+});
