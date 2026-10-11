@@ -127,8 +127,10 @@ model Project {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   audits              Audit[]
+  aiRuns              AiVisibilityRun[]
 
   // Permet la clé étrangère composite Audit(projectId, isDemo) → Project(id, isDemo).
+  // Permet les clés étrangères composites (projectId, isDemo) des audits et des lancements IA.
   @@unique([id, isDemo])
   @@index([userId, createdAt])
 }
@@ -161,7 +163,6 @@ model Audit {
   errorCode       String?
   pages           PageAnalysis[]
   findings        Finding[]
-  aiResults       AiQueryResult[]
 
   @@index([projectId, queuedAt])
   @@index([status, queuedAt])
@@ -204,25 +205,72 @@ model Finding {
   @@index([auditId, priority])
 }
 
+enum AiQueryStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+/// Un lancement de mesure de visibilité IA : une série de requêtes envoyées à un fournisseur.
+model AiVisibilityRun {
+  id                  String          @id @default(cuid())
+  projectId           String
+  isDemo              Boolean         @default(false)
+  project             Project         @relation(fields: [projectId, isDemo], references: [id, isDemo], onDelete: Cascade, onUpdate: Cascade)
+  status              AuditStatus     @default(QUEUED)
+  provider            AiProviderKind
+  model               String // modèle demandé
+  queryCount          Int
+  estimatedCostMinUsd Float
+  estimatedCostMaxUsd Float
+  actualCostUsd       Float? // somme des coûts communiqués par l'API, si disponibles
+  // file d'attente
+  attempts            Int             @default(0)
+  lockedAt            DateTime?
+  queuedAt            DateTime        @default(now())
+  startedAt           DateTime?
+  finishedAt          DateTime?
+  progress            Json?
+  errorCode           String?
+  inputSnapshot       Json // marque, domaine, concurrents au moment du lancement
+  results             AiQueryResult[]
+
+  @@index([projectId, queuedAt])
+  @@index([status, queuedAt])
+}
+
+/// Une requête envoyée à une IA et sa réponse, conservée sans modification.
 model AiQueryResult {
   id                   String         @id @default(cuid())
-  auditId              String
-  audit                Audit          @relation(fields: [auditId], references: [id], onDelete: Cascade)
-  query                String
-  askedAt              DateTime       @default(now())
+  runId                String
+  run                  AiVisibilityRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  position             Int // ordre dans le lancement
+  query                String // requête originale, telle que saisie
+  status               AiQueryStatus  @default(PENDING)
+  attempts             Int            @default(0)
   provider             AiProviderKind
-  model                String // identifiant renvoyé par l'API
-  brandDetected        String? // alias effectivement trouvé, ou null
-  brandMentioned       Boolean
-  brandRecommended     Boolean // uniquement si formulation explicite de recommandation
+  requestedModel       String
+  model                String? // identifiant renvoyé par l'API
+  askedAt              DateTime?
+  latencyMs            Int?
+  rawResponse          String? // texte brut, jamais modifié
+  rawPayload           Json? // réponse JSON complète, jamais modifiée
+  sources              Json           @default("[]") // [{ url, title?, origin: API | TEXT }]
+  brandDetected        String? // terme trouvé (nom, alias, domaine)
+  brandMentioned       Boolean?
+  brandCited           Boolean? // une source renvoyée pointe vers le site de la marque
+  brandRecommended     Boolean? // formulation explicite de recommandation
   approxPosition       Int?
   positionRatio        Float?
+  brandExcerpt         String?
   competitorsMentioned Json           @default("[]")
-  sources              Json           @default("[]") // uniquement les sources réellement retournées
-  rawResponse          String // réponse brute, jamais modifiée
-  confidence           Float
+  confidence           Float?
+  usage                Json?
+  costUsd              Float?
   errorCode            String?
-  errorMessage         String?
+  errorMessage         String? // message nettoyé, sans clé ni en-tête
+  httpStatus           Int?
 
-  @@index([auditId])
+  @@unique([runId, position])
+  @@index([runId, status])
 }

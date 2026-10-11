@@ -70,7 +70,7 @@ describe("Audit", () => {
 });
 
 describe("PageAnalysis, Finding, AiQueryResult", () => {
-  it("se rattachent à un audit et conservent la réponse brute à l'identique", async () => {
+  it("se rattachent à leur audit ou lancement et conservent la réponse brute à l'identique", async () => {
     const user = await createUser();
     const audit = await createAudit((await createProject(user.id)).id);
     const raw = "  Réponse brute\n<script>alert(1)</script>  **sans** retouche ";
@@ -90,11 +90,16 @@ describe("PageAnalysis, Finding, AiQueryResult", () => {
         recommendation: "Recommandation",
       },
     });
+    const run = await prisma.aiVisibilityRun.create({
+      data: { projectId: audit.projectId, provider: "PERPLEXITY", model: "perplexity/sonar", queryCount: 1, estimatedCostMinUsd: 0, estimatedCostMaxUsd: 0, inputSnapshot: {} },
+    });
     const ai = await prisma.aiQueryResult.create({
       data: {
-        auditId: audit.id,
+        runId: run.id,
+        position: 0,
         query: "Question",
         provider: "PERPLEXITY",
+        requestedModel: "perplexity/sonar",
         model: "modele-test",
         brandMentioned: true,
         brandRecommended: false,

@@ -21,7 +21,23 @@ Conception complète : [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 - File d'attente PostgreSQL + worker séparé (`pnpm worker`) : un audit n'est jamais traité deux fois, un audit abandonné est repris (3 tentatives maximum), progression affichée en direct.
 - Historique des audits, rapport lisible par un dirigeant (synthèse, plan d'action, détail des critères, limites) imprimable en PDF depuis le navigateur.
 
-Pas encore : vitesse (PageSpeed), indice GEO, plans à 30/90 jours, export PDF serveur, requêtes IA.
+- Module facultatif de **visibilité IA** (`src/server/ai-visibility`) : interface `AiProvider` (Perplexity aujourd'hui), requêtes de prospects envoyées telles quelles, réponse brute et JSON complet conservés sans modification, sources renvoyées, distinction **mention / citation / recommandation**, concurrents détectés, statut et erreurs par requête. File d'attente traitée par le worker, reprise après arrêt sans renvoyer les requêtes déjà répondues, gestion du « rate limit » (429, Retry-After, 3 essais), espacement des appels, journalisation, limites par lancement et par 24 h, estimation du coût à accepter avant tout envoi.
+
+Pas encore : vitesse (PageSpeed), indice GEO, plans à 30/90 jours, export PDF serveur, clés API propres à chaque client.
+
+### Activer la visibilité IA
+
+Renseigner dans `.env` du serveur (jamais côté navigateur) puis redémarrer l'application et le worker :
+
+```bash
+PERPLEXITY_API_KEY="pplx-…"
+PERPLEXITY_API_MODE="agent"   # Agent API /v1/responses (par défaut) ; "chat" = ancien format
+AI_MAX_QUERIES_PER_RUN=10     # requêtes par lancement (20 max)
+AI_MAX_QUERIES_PER_DAY=50     # requêtes par utilisateur sur 24 h
+AI_MIN_INTERVAL_MS=1500       # délai minimal entre deux appels
+```
+
+Sans clé, le module est simplement désactivé. Perplexity a arrêté le support officiel de Sonar Chat Completions le 27/09/2026 : l'adaptateur utilise l'Agent API et lit plusieurs formats de réponse ; vérifier le premier résultat réel (la réponse JSON complète est conservée) et les tarifs (estimation fondée sur les tarifs publics d'octobre 2026).
 
 Limites connues du module d'analyse : le JavaScript des pages n'est pas exécuté (les sites rendus côté client sont signalés `likelyClientRendered`) et un texte masqué par une feuille de style n'est pas détecté. Les CTA et preuves sont des repérages automatiques, chacun accompagné de l'extrait exact pour vérification.
 

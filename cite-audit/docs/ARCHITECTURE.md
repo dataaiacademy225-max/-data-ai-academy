@@ -8,6 +8,8 @@
 >
 > Exploration et worker (implémentés) : `Audit.progress` (JSON) pour l'avancement ; verrou renouvelé à chaque progression, audit repris après 5 min sans signe de vie, 3 tentatives maximum ; audit en attente depuis plus de 30 min annulé à la demande suivante ; quotas de sélection par rôle (contact 1, à propos 1, offres 5, études de cas 2, FAQ 1, articles 2) puis complément jusqu'à 15 pages ; mentions légales, fichiers et pages de connexion exclus ; liens cassés = pages liées depuis l'accueil répondant 404/410.
 >
+> Visibilité IA (implémentée) : clé fournisseur en variable d'environnement serveur (pas de table `ApiCredential` pour l'instant) ; `AiVisibilityRun` (lancement, file d'attente, coût estimé/réel) et `AiQueryResult` (une ligne par requête : statut, essais, réponse brute, JSON complet, sources, mention/citation/recommandation, concurrents, erreur) ; Perplexity via l'Agent API (`/v1/responses`, modèle `perplexity/sonar`) depuis le retrait de Sonar Chat Completions (27/09/2026).
+>
 > CITE Audit mesure des signaux observables. Il ne garantit aucune position dans Google ni aucune citation ou recommandation par une IA. Le score CITE est un indicateur interne à Data & AI Academy.
 
 Sommaire

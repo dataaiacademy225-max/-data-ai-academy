@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { extractPageFacts } from "@/server/crawler/extract";
+import { analyzeResponse } from "@/server/ai-visibility/analyze";
 import { DEMO_HOME_HTML, DEMO_SITE_URL } from "@/server/demo/demo-site";
 import { scoreSite, type PageInput } from "@/server/scoring";
 import { saveAuditResult } from "@/server/services/audit-results";
@@ -107,24 +108,68 @@ export async function seedDemo(prisma: PrismaClient, signUp: SignUp, password: s
       queuedAt: now,
       startedAt: now,
       inputSnapshot: { demo: true, siteUrl: project.siteUrl, ...context },
-      aiResults: {
-        create: [
-          {
-            query: "Quel cabinet de conseil en data choisir à Abidjan ?",
-            provider: "OPENAI_COMPATIBLE",
-            model: "demo-model",
-            brandMentioned: false,
-            brandRecommended: false,
-            competitorsMentioned: [],
-            sources: [],
-            rawResponse: `${TAG} Réponse fictive de démonstration : aucun appel à une IA n'a été effectué.`,
-            confidence: 1,
-          },
-        ],
-      },
     },
   });
   await prisma.$transaction((tx) => saveAuditResult(tx, audit.id, pages, result, { textPrefix: `${TAG} ` }));
+
+  // Mesure de visibilité IA de démonstration : réponses FICTIVES (aucun appel à une IA), lues par le vrai analyseur.
+  const brand = { name: "Cabinet Exemple Conseil", url: DEMO_SITE_URL };
+  const competitors = [{ name: "Concurrent A", url: null }, { name: "Concurrent B", url: "https://www.example.org/" }];
+  const demoAnswers = [
+    {
+      query: "Quel cabinet de conseil en data choisir à Abidjan ?",
+      text: `${TAG} Réponse fictive. Plusieurs cabinets interviennent à Abidjan :\n1. Concurrent A, spécialisé en tableaux de bord.\n2. Cabinet Exemple Conseil, qui accompagne les PME (https://www.example.com/).\n3. Concurrent B.`,
+      sources: [{ url: "https://www.example.com/", title: "[DÉMO] Cabinet Exemple Conseil", origin: "API" as const }],
+    },
+    {
+      query: "Meilleur consultant data pour PME en Côte d'Ivoire",
+      text: `${TAG} Réponse fictive. Je recommande Concurrent A pour les PME qui débutent avec leurs données.`,
+      sources: [{ url: "https://www.example.org/", title: "[DÉMO] Concurrent B", origin: "API" as const }],
+    },
+  ];
+  await prisma.aiVisibilityRun.create({
+    data: {
+      projectId: project.id,
+      isDemo: true,
+      status: "SUCCEEDED",
+      provider: "PERPLEXITY",
+      model: "perplexity/sonar",
+      queryCount: demoAnswers.length,
+      estimatedCostMinUsd: 0,
+      estimatedCostMaxUsd: 0,
+      startedAt: now,
+      finishedAt: now,
+      progress: { done: demoAnswers.length, total: demoAnswers.length },
+      inputSnapshot: { demo: true, brand, competitors },
+      results: {
+        create: demoAnswers.map((a, position) => {
+          const analysis = analyzeResponse(a.text, a.sources, brand, competitors);
+          return {
+            position,
+            query: a.query,
+            status: "SUCCEEDED" as const,
+            attempts: 1,
+            provider: "PERPLEXITY" as const,
+            requestedModel: "perplexity/sonar",
+            model: "demo-model",
+            askedAt: now,
+            rawResponse: a.text,
+            rawPayload: { demo: true },
+            sources: analysis.sources,
+            brandDetected: analysis.brand.detectedAs,
+            brandMentioned: analysis.brand.mentioned,
+            brandCited: analysis.brand.cited,
+            brandRecommended: analysis.brand.recommended,
+            approxPosition: analysis.brand.approxPosition,
+            positionRatio: analysis.brand.positionRatio,
+            brandExcerpt: analysis.brand.excerpt,
+            competitorsMentioned: analysis.competitors,
+            confidence: analysis.confidence,
+          };
+        }),
+      },
+    },
+  });
 
   return { userId };
 }

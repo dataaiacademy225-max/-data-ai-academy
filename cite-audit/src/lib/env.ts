@@ -27,3 +27,24 @@ export function getServerEnv(): ServerEnv {
   cached = parsed.data;
   return cached;
 }
+
+const aiEnvSchema = z.object({
+  /** Clé Perplexity : sans elle, le module de visibilité IA est désactivé. Jamais exposée au navigateur. */
+  PERPLEXITY_API_KEY: z.string().min(10).optional().catch(undefined),
+  /** « agent » : Agent API (/v1/responses, par défaut). « chat » : ancien format chat/completions. */
+  PERPLEXITY_API_MODE: z.enum(["agent", "chat"]).default("agent").catch("agent"),
+  PERPLEXITY_BASE_URL: z.url().startsWith("https://").default("https://api.perplexity.ai").catch("https://api.perplexity.ai"),
+  AI_MAX_QUERIES_PER_RUN: z.coerce.number().int().min(1).max(20).default(10).catch(10),
+  AI_MAX_QUERIES_PER_DAY: z.coerce.number().int().min(1).max(500).default(50).catch(50),
+  AI_MIN_INTERVAL_MS: z.coerce.number().int().min(0).max(60_000).default(1500).catch(1500),
+});
+
+export type AiEnv = z.infer<typeof aiEnvSchema>;
+
+/** Configuration du module IA, relue à chaque appel (permet d'activer le module sans redéploiement du code). */
+export function getAiEnv(): AiEnv {
+  const raw = { ...process.env };
+  // Une variable vide équivaut à une variable absente.
+  for (const key of Object.keys(aiEnvSchema.shape)) if (raw[key] === "") delete raw[key];
+  return aiEnvSchema.parse(raw);
+}

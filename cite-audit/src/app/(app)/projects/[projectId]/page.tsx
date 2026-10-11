@@ -74,6 +74,17 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
         </CardContent>
       </Card>
 
+      <Link
+        href={`/projects/${project.id}/ai-visibility`}
+        className="block rounded-md border border-border bg-card p-4 hover:bg-muted"
+      >
+        <p className="font-semibold">Visibilité dans les réponses des IA (facultatif) →</p>
+        <p className="text-sm text-muted-foreground">
+          Observer si votre marque est mentionnée, citée ou recommandée par un assistant IA sur vos questions de prospects.
+          Mesure indicative.
+        </p>
+      </Link>
+
       <section className="space-y-3">
         <h2 className="font-display text-xl font-semibold">Historique des audits</h2>
         {audits.length === 0 ? (

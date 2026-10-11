@@ -5,6 +5,8 @@
 import "dotenv/config";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/db";
+import { processAiRun } from "@/server/ai-visibility/process-run";
+import { claimNextAiRun } from "@/server/ai-visibility/queue";
 import { processAudit } from "@/server/jobs/process-audit";
 import { claimNextAudit } from "@/server/jobs/queue";
 
@@ -17,17 +19,23 @@ async function main() {
   logger.info("worker.started", { pid: process.pid });
   while (!stopping) {
     let auditId: string | null = null;
+    let aiRunId: string | null = null;
     try {
+      // Les audits de site passent en priorité ; puis les mesures de visibilité IA.
       auditId = await claimNextAudit();
+      if (!auditId) aiRunId = await claimNextAiRun();
     } catch (error) {
       logger.error("worker.claim_failed", { error });
     }
-    if (!auditId) {
+    if (auditId) {
+      logger.info("worker.audit_started", { auditId });
+      await processAudit(auditId);
+    } else if (aiRunId) {
+      logger.info("worker.ai_run_started", { runId: aiRunId });
+      await processAiRun(aiRunId);
+    } else {
       await sleep(POLL_MS);
-      continue;
     }
-    logger.info("worker.audit_started", { auditId });
-    await processAudit(auditId);
   }
   await prisma.$disconnect();
   logger.info("worker.stopped", {});
