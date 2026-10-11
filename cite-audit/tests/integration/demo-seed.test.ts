@@ -41,6 +41,15 @@ describe("seed de démonstration", () => {
     expect(await prisma.audit.count({ where: { isDemo: false } })).toBe(0);
   });
 
+  it("calcule l'audit de démonstration avec le vrai moteur, textes marqués [DÉMO]", async () => {
+    await seedDemo(prisma, fakeSignUp, "mot-de-passe-demo");
+    const audit = await prisma.audit.findFirstOrThrow({ where: { isDemo: true }, include: { findings: true } });
+    expect(audit.scoringVersion).toMatch(/^cite-/);
+    expect(audit.scoreTotal).not.toBeNull();
+    expect(audit.findings.length).toBeGreaterThan(0);
+    for (const f of audit.findings) expect(f.observation.startsWith("[DÉMO]")).toBe(true);
+  });
+
   it("refuse de s'exécuter si le compte démo possède un projet réel", async () => {
     const demoUser = await createUser(DEMO_EMAIL);
     await createProject(demoUser.id, projectInput());

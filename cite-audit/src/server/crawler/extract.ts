@@ -1,5 +1,5 @@
 import { load, type CheerioAPI } from "cheerio";
-import type { CtaFact, JsonLdBlock, LinkFact, PageFacts, ProofFact, RobotsMeta } from "@/server/crawler/types";
+import type { CtaFact, FormFact, JsonLdBlock, LinkFact, PageFacts, ProofFact, RobotsMeta } from "@/server/crawler/types";
 
 /**
  * Extraction des faits observables d'une page HTML. Fonction pure : aucun réseau, aucun score.
@@ -16,6 +16,8 @@ const LIMITS = {
   proofs: 30,
   proofExcerpt: 200,
   jsonLdBytes: 20_000,
+  sampleChars: 20_000,
+  forms: 10,
 } as const;
 
 const clean = (value: string | undefined | null, max: number = LIMITS.text): string =>
@@ -147,14 +149,16 @@ function extractCtas($: CheerioAPI, base: URL): CtaFact[] {
     // Un bouton sans action visible (menu, fermeture…) n'est pas un appel à l'action.
     if (tag === "button" && !ACTION_WORDS.test(text) && node.attr("type") !== "submit") return;
 
-    const key = `${text.toLowerCase()}|${href?.href ?? ""}`;
+    const position = (order.get(el) ?? Infinity) < firstH2Index ? "top" : "rest";
+    // Un même CTA présent en haut ET plus bas est conservé deux fois (répétition observable).
+    const key = `${text.toLowerCase()}|${href?.href ?? ""}|${position}`;
     if (seen.has(key)) return;
     seen.add(key);
     ctas.push({
       text,
       href: href ? href.href : null,
       element: tag === "a" ? "link" : tag === "input" ? "input" : "button",
-      position: (order.get(el) ?? Infinity) < firstH2Index ? "top" : "rest",
+      position,
     });
   });
   return ctas;
@@ -239,6 +243,34 @@ function extractProofs($: CheerioAPI, text: string, jsonLd: JsonLdBlock[]): Proo
   return proofs;
 }
 
+const SEARCH_FIELD = /^(q|s|search|recherche|query)$/i;
+
+function extractForms($: CheerioAPI): FormFact[] {
+  const forms: FormFact[] = [];
+  $("form").each((_, el) => {
+    if (forms.length >= LIMITS.forms) return false;
+    const form = $(el);
+    const fields = form
+      .find("input, textarea, select")
+      .filter((__, f) => {
+        const type = ($(f).attr("type") ?? "text").toLowerCase();
+        return !["hidden", "submit", "button", "reset", "image"].includes(type);
+      });
+    const isSearch =
+      form.attr("role") === "search" ||
+      (fields.length === 1 && SEARCH_FIELD.test(fields.first().attr("name") ?? "")) ||
+      fields.first().attr("type") === "search";
+    if (isSearch || fields.length === 0) return;
+    const submit = form.find('button[type="submit" i], input[type="submit" i], button:not([type])').first();
+    forms.push({
+      fieldCount: fields.length,
+      hasEmailField: fields.filter((__, f) => $(f).attr("type") === "email" || /mail/i.test($(f).attr("name") ?? "")).length > 0,
+      submitText: clean(submit.is("input") ? submit.attr("value") : submit.text(), 80) || null,
+    });
+  });
+  return forms;
+}
+
 function extractLinks($: CheerioAPI, base: URL) {
   const internal: LinkFact[] = [];
   const external: LinkFact[] = [];
@@ -314,12 +346,17 @@ export function extractPageFacts(html: string, pageUrl: string): PageFacts {
     canonical: [...new Set(canonical)],
     h1: $("h1").map((_, el) => clean($(el).text())).get().filter(Boolean),
     h2: $("h2").map((_, el) => clean($(el).text())).get().filter(Boolean).slice(0, 100),
-    visibleText: { wordCount: wordList.length, excerpt: wordList.slice(0, LIMITS.excerptWords).join(" ") },
+    visibleText: {
+      wordCount: wordList.length,
+      excerpt: wordList.slice(0, LIMITS.excerptWords).join(" "),
+      sample: text.slice(0, LIMITS.sampleChars),
+    },
     likelyClientRendered: wordList.length < 50 && (appRoot || scripts > 0),
     internalLinks: links.internal,
     externalLinks: links.external,
     contactLinks: { emails: links.emails, phones: links.phones },
     images: { total: images.length, missingAlt },
+    forms: extractForms($),
     jsonLd,
     openGraph: parseOpenGraph($),
     ctas: extractCtas($, base),

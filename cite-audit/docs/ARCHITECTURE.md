@@ -4,6 +4,8 @@
 >
 > Écarts retenus à l'étape 1 : modèles nommés `PageAnalysis` et `AiQueryResult` ; concurrents (`competitors`, JSON) et requêtes GEO (`geoQueries`, tableau) stockés sur `Project` plutôt qu'en tables séparées ; `isDemo` sur `Project` et `Audit` (clé étrangère composite) pour isoler les données de démonstration ; `CriterionResult` et `ApiCredential` arriveront aux étapes 3 et 5 ; `cacheComponents` de Next.js 16 désactivé (rendu dynamique classique, plus simple pour des pages authentifiées).
 >
+> Écarts retenus pour le scoring (implémenté, barème `cite-1.0.0`) : seuil de couverture minimale de 50 % par pilier en plus du seuil « indicatif » de 70 % ; score global seulement si les 4 piliers sont notés ; contenu rendu par JavaScript → critères de contenu « non vérifiés » ; T2 exige au moins 3 pages analysées ; T5 mesure l'accès en un clic aux offres et au contact (taille du menu non mesurée) ; résultats par critère stockés dans `Audit.reportSnapshot` (pas encore de table `CriterionResult`).
+>
 > CITE Audit mesure des signaux observables. Il ne garantit aucune position dans Google ni aucune citation ou recommandation par une IA. Le score CITE est un indicateur interne à Data & AI Academy.
 
 Sommaire

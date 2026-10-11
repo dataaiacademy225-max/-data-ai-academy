@@ -60,7 +60,11 @@ export default async function DashboardPage() {
                 <Card className="h-full">
                   <CardHeader>
                     <div className="flex items-start justify-between gap-2">
-                      <CardTitle className="text-lg">{project.companyName}</CardTitle>
+                      <CardTitle className="text-lg">
+                        <Link href={`/projects/${project.id}`} className="hover:underline">
+                          {project.companyName}
+                        </Link>
+                      </CardTitle>
                       {project.isDemo && <Badge variant="demo">Démo</Badge>}
                     </div>
                     <CardDescription className="break-all">{project.siteUrl}</CardDescription>
@@ -74,7 +78,7 @@ export default async function DashboardPage() {
                       {lastAudit
                         ? lastAudit.scoreTotal !== null
                           ? `Dernier score CITE : ${lastAudit.scoreTotal}/100`
-                          : "Audit sans score calculé"
+                          : "Dernier audit : score non vérifié"
                         : "Aucun audit lancé"}
                       {" · "}créé le {dateFormat.format(project.createdAt)}
                     </p>

@@ -77,6 +77,17 @@ describe("extractPageFacts — page valide", () => {
     for (const proof of facts.proofs) expect(proof.excerpt.length).toBeLessThanOrEqual(200);
   });
 
+  it("relève les formulaires (hors champs cachés et recherche)", () => {
+    expect(facts.forms).toEqual([{ fieldCount: 1, hasEmailField: true, submitText: "Demander un devis" }]);
+    const search = extractPageFacts('<form role="search"><input name="q"></form><form><input name="s"></form>', "https://site.com/");
+    expect(search.forms).toEqual([]);
+  });
+
+  it("garde un échantillon de texte visible plafonné", () => {
+    expect(facts.visibleText.sample).toContain("Écrivez-nous sur WhatsApp");
+    expect(facts.visibleText.sample.length).toBeLessThanOrEqual(20_000);
+  });
+
   it("compte les images sans texte alternatif", () => {
     expect(facts.images).toEqual({ total: 3, missingAlt: 1 });
   });
@@ -96,6 +107,7 @@ describe("extractPageFacts — cas limites", () => {
       openGraph: {},
       ctas: [],
       proofs: [],
+      forms: [],
       robotsMeta: { raw: [], noindex: false, nofollow: false },
     });
   });

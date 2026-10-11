@@ -65,3 +65,18 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/* Impression du rapport : sans en-tête ni pied d'application, fond blanc. */
+@media print {
+  header.border-b,
+  footer.border-t {
+    display: none;
+  }
+  body {
+    background: #fff;
+    color: #0b1526;
+  }
+  details > *:not(summary) {
+    display: block;
+  }
+}

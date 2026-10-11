@@ -1,4 +1,8 @@
 import type { PrismaClient } from "@/generated/prisma/client";
+import { extractPageFacts } from "@/server/crawler/extract";
+import { DEMO_HOME_HTML, DEMO_SITE_URL } from "@/server/demo/demo-site";
+import { scoreSite, type PageInput } from "@/server/scoring";
+import { saveAuditResult } from "@/server/services/audit-results";
 
 /**
  * Données de démonstration.
@@ -14,7 +18,6 @@ import type { PrismaClient } from "@/generated/prisma/client";
 
 export const DEMO_EMAIL = "demo@example.com";
 export const DEMO_NAME = "Compte de démonstration";
-export const DEMO_SCORING_VERSION = "demo";
 const TAG = "[DÉMO]";
 
 type SignUp = (input: { name: string; email: string; password: string }) => Promise<{ userId: string }>;
@@ -65,63 +68,45 @@ export async function seedDemo(prisma: PrismaClient, signUp: SignUp, password: s
     },
   });
 
+  // Audit de démonstration : le VRAI moteur de scoring appliqué à une page fictive (aucun appel réseau).
+  const context = {
+    companyName: "Cabinet Exemple Conseil",
+    sector: project.sector,
+    primaryTarget: project.primaryTarget,
+    city: project.city,
+    country: project.country,
+    geoQueries: project.geoQueries,
+  };
+  const pages: PageInput[] = [
+    {
+      role: "home",
+      url: DEMO_SITE_URL,
+      ok: true,
+      analysis: {
+        requestedUrl: DEMO_SITE_URL,
+        finalUrl: DEMO_SITE_URL,
+        httpStatus: 200,
+        redirectChain: [],
+        contentType: "text/html; charset=utf-8",
+        bytes: DEMO_HOME_HTML.length,
+        fetchMs: 0,
+        xRobotsTag: null,
+        robotsTxt: "ALLOWED",
+        facts: extractPageFacts(DEMO_HOME_HTML, DEMO_SITE_URL),
+      },
+    },
+  ];
+  const result = scoreSite({ context, pages, site: {} });
   const now = new Date();
-  await prisma.audit.create({
+  const audit = await prisma.audit.create({
     data: {
       projectId: project.id,
       isDemo: true,
-      status: "SUCCEEDED",
-      scoringVersion: DEMO_SCORING_VERSION,
+      status: "RUNNING",
+      scoringVersion: result.scoringVersion,
       queuedAt: now,
       startedAt: now,
-      finishedAt: now,
-      // Valeurs fictives, choisies à la main pour la démonstration de l'interface.
-      scoreTotal: 58,
-      scoreClarifier: 16,
-      scoreIndexer: 19,
-      scoreTunnel: 13,
-      scoreEnclencher: 10,
-      geoIndex: 41,
-      coverage: 0.9,
-      inputSnapshot: { demo: true, siteUrl: project.siteUrl, primaryTarget: project.primaryTarget },
-      pages: {
-        create: [
-          {
-            requestedUrl: "https://www.example.com/",
-            finalUrl: "https://www.example.com/",
-            httpStatus: 200,
-            pageType: "home",
-            robotsAllowed: true,
-            bytes: 48_000,
-            fetchMs: 420,
-            facts: { demo: true, title: `${TAG} Cabinet Exemple Conseil`, h1: [`${TAG} Titre d'exemple`] },
-          },
-        ],
-      },
-      findings: {
-        create: [
-          {
-            pillar: "CLARIFIER",
-            criterionCode: "C3",
-            priority: "IMPORTANT",
-            observation: `${TAG} La cible principale n'apparaît pas dans le haut de la page d'accueil.`,
-            evidence: [{ url: "https://www.example.com/", excerpt: `${TAG} extrait fictif` }],
-            impact: `${TAG} Un visiteur peut mettre plus de temps à comprendre si l'offre s'adresse à lui.`,
-            recommendation: `${TAG} Nommer la cible dans le titre principal ou la phrase qui le suit.`,
-            effort: "faible",
-          },
-          {
-            pillar: "ENCLENCHER",
-            criterionCode: "E2",
-            priority: "CRITIQUE",
-            observation: `${TAG} Aucun formulaire ni lien de prise de rendez-vous détecté.`,
-            evidence: [{ url: "https://www.example.com/" }],
-            impact: `${TAG} Un prospect convaincu n'a pas de moyen simple de passer à l'action.`,
-            recommendation: `${TAG} Ajouter un formulaire court (6 champs maximum) ou un lien de réservation.`,
-            effort: "moyen",
-          },
-        ],
-      },
+      inputSnapshot: { demo: true, siteUrl: project.siteUrl, ...context },
       aiResults: {
         create: [
           {
@@ -139,6 +124,7 @@ export async function seedDemo(prisma: PrismaClient, signUp: SignUp, password: s
       },
     },
   });
+  await prisma.$transaction((tx) => saveAuditResult(tx, audit.id, pages, result, { textPrefix: `${TAG} ` }));
 
   return { userId };
 }

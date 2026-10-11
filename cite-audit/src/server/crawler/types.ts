@@ -74,6 +74,8 @@ export type CtaFact = {
   position: "top" | "rest";
 };
 
+export type FormFact = { fieldCount: number; hasEmailField: boolean; submitText: string | null };
+
 export type ProofType =
   | "testimonial"
   | "client_logos"
@@ -104,13 +106,16 @@ export type PageFacts = {
   canonical: string[];
   h1: string[];
   h2: string[];
-  visibleText: { wordCount: number; excerpt: string };
+  /** excerpt : 150 premiers mots ; sample : début du texte visible, plafonné (jamais le HTML). */
+  visibleText: { wordCount: number; excerpt: string; sample: string };
   /** Peu de texte et une application JavaScript détectée : le contenu réel n'est pas visible sans exécution. */
   likelyClientRendered: boolean;
   internalLinks: LinkFact[];
   externalLinks: LinkFact[];
   contactLinks: { emails: string[]; phones: string[] };
   images: { total: number; missingAlt: number };
+  /** Formulaires visibles (hors recherche) : nombre de champs à remplir. */
+  forms: FormFact[];
   jsonLd: JsonLdBlock[];
   openGraph: Record<string, string>;
   ctas: CtaFact[];
