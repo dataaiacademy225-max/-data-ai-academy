@@ -23,7 +23,82 @@ const FAKE_DNS: Record<string, string[]> = {
   "piege-interne.com": ["192.168.1.10"], // domaine public qui pointe vers le réseau interne
   "piege-mixte.com": ["93.184.216.34", "10.0.0.8"], // réponse DNS mixte
   "metadonnees-cloud.com": ["169.254.169.254"],
+  "multi-site.com": ["127.0.0.1"],
+  "www.multi-site.com": ["127.0.0.1"],
+  "sans-sitemap.com": ["127.0.0.1"],
 };
+
+const page = (title: string, h1: string, body = "") =>
+  `<!doctype html><html lang="fr"><head><title>${title}</title></head><body><h1>${h1}</h1><h2>Section</h2><p>${body}</p></body></html>`;
+
+/** Petit site de plusieurs pages pour tester l'exploration. */
+function multiSite(pathname: string, host: string, res: ServerResponse, port: number) {
+  const send = (status: number, type: string, body: string) => {
+    res.writeHead(status, { "content-type": type });
+    res.end(body);
+  };
+  const origin = `http://${host}:${port}`;
+  switch (pathname.replace(/\/+$/, "") || "/") {
+    case "/robots.txt":
+      if (host === "sans-sitemap.com") return send(200, "text/plain", "User-agent: *\nDisallow: /prive\n");
+      return send(200, "text/plain", `User-agent: *\nDisallow: /prive\nSitemap: ${origin}/sitemap-index.xml\n`);
+    case "/sitemap-index.xml":
+      return send(200, "application/xml", `<?xml version="1.0"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><sitemap><loc>${origin}/sitemap-pages.xml</loc></sitemap></sitemapindex>`);
+    case "/sitemap-pages.xml":
+      return send(
+        200,
+        "application/xml",
+        `<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+          <url><loc>${origin}/</loc></url>
+          <url><loc>${origin}/faq</loc></url>
+          <url><loc>${origin}/offres/audit</loc></url>
+          <url><loc>https://ailleurs.com/page</loc></url>
+        </urlset>`,
+      );
+    case "/":
+      return send(
+        200,
+        "text/html",
+        `<!doctype html><html lang="fr"><head><title>Multi Site — Conseil</title></head><body>
+          <nav>
+            <a href="/offres/conseil">Nos offres</a>
+            <a href="/offres/formation">Formation</a>
+            <a href="/a-propos">À propos</a>
+            <a href="/contact">Contact</a>
+            <a href="/etudes-de-cas">Études de cas</a>
+            <a href="/blog/article-1">Blog</a>
+            <a href="/page-cassee">Ancienne page</a>
+            <a href="/prive/espace">Espace privé</a>
+            <a href="/brochure.pdf">Brochure</a>
+            <a href="/mentions-legales">Mentions légales</a>
+            <a href="/connexion">Se connecter</a>
+            <a href="https://ailleurs.com/">Partenaire</a>
+            <a href="/a-propos#equipe">Équipe</a>
+          </nav>
+          <h1>Conseil data pour PME</h1><h2>Section</h2></body></html>`,
+      );
+    case "/offres/conseil":
+      return send(200, "text/html", page("Conseil data", "Notre offre de conseil data"));
+    case "/offres/formation":
+      return send(200, "text/html", page("Formation", "Formation data"));
+    case "/offres/audit":
+      return send(200, "text/html", page("Audit", "Audit data"));
+    case "/a-propos":
+      return send(200, "text/html", page("À propos", "Notre équipe"));
+    case "/contact":
+      return send(200, "text/html", `${page("Contact", "Contactez-nous")}<form><input name="email" type="email"><button type="submit">Envoyer</button></form>`);
+    case "/etudes-de-cas":
+      return send(200, "text/html", page("Études de cas", "Nos études de cas"));
+    case "/faq":
+      return send(200, "text/html", page("FAQ", "Questions fréquentes"));
+    case "/blog/article-1":
+      return send(200, "text/html", page("Article", "Un article"));
+    case "/prive/espace":
+      return send(200, "text/html", page("Privé", "Ne doit pas être analysé"));
+    default:
+      return send(404, "text/html", page("Introuvable", "Page introuvable"));
+  }
+}
 
 export type TestSite = { port: number; url: (host: string, path: string) => string; policy: NetworkPolicy; close: () => Promise<void> };
 
@@ -38,6 +113,8 @@ function handle(req: IncomingMessage, res: ServerResponse, port: number) {
     res.writeHead(status, { location });
     res.end();
   };
+
+  if (["multi-site.com", "www.multi-site.com", "sans-sitemap.com"].includes(host)) return multiSite(url.pathname, host, res, port);
 
   if (url.pathname === "/robots.txt") {
     if (host === "robots-ko.com") return html(503, "indisponible");

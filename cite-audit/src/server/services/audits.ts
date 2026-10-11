@@ -1,32 +1,21 @@
 import "server-only";
-import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/db";
-import { analyzeUrl } from "@/server/crawler";
-import type { Result, UrlAnalysis } from "@/server/crawler/types";
-import { scoreSite, SCORING_VERSION, type PageInput, type ScoringContext, type ScoringResult } from "@/server/scoring";
-import { saveAuditResult } from "@/server/services/audit-results";
+import { SCORING_VERSION, type ScoringContext, type ScoringResult } from "@/server/scoring";
 
 /** Limite d'audits lancés par utilisateur sur 24 heures (protection contre les abus). */
 export const MAX_AUDITS_PER_DAY = 20;
-/** Un audit « en cours » depuis plus longtemps est considéré comme abandonné. */
-const RUNNING_STALE_MS = 2 * 60 * 1000;
+/** Un audit en attente depuis plus longtemps est considéré comme abandonné (worker absent). */
+export const QUEUED_STALE_MS = 30 * 60 * 1000;
 
-export type LaunchError = "NOT_FOUND" | "DEMO_PROJECT" | "QUOTA" | "ALREADY_RUNNING" | "INTERNAL";
-
-export type AuditDeps = {
-  /** Analyse d'une URL (remplaçable dans les tests). */
-  analyze?: (url: string) => Promise<Result<UrlAnalysis>>;
-};
+export type LaunchError = "NOT_FOUND" | "DEMO_PROJECT" | "QUOTA" | "ALREADY_RUNNING";
 
 /**
- * Audit de la page d'accueil d'un projet : analyse (crawler) → score (moteur pur) → enregistrement.
- * MVP : une seule page, exécutée pendant la requête (≈ 15 s maximum). Un worker prendra le relais
- * pour l'analyse de plusieurs pages.
+ * Demande d'audit : vérifie les droits et les limites, puis place l'audit en file d'attente.
+ * Le worker (`pnpm worker`) explore ensuite jusqu'à 15 pages, calcule le score et enregistre le rapport.
  */
-export async function runHomepageAudit(
+export async function requestAudit(
   userId: string,
   projectId: string,
-  deps: AuditDeps = {},
 ): Promise<{ ok: true; auditId: string } | { ok: false; error: LaunchError }> {
   const project = await prisma.project.findFirst({ where: { id: projectId, userId } });
   if (!project) return { ok: false, error: "NOT_FOUND" };
@@ -36,10 +25,13 @@ export async function runHomepageAudit(
   const recent = await prisma.audit.count({ where: { project: { userId }, queuedAt: { gte: since } } });
   if (recent >= MAX_AUDITS_PER_DAY) return { ok: false, error: "QUOTA" };
 
-  const running = await prisma.audit.findFirst({
-    where: { projectId, status: { in: ["QUEUED", "RUNNING"] }, queuedAt: { gte: new Date(Date.now() - RUNNING_STALE_MS) } },
+  // Un audit resté en attente trop longtemps est annulé pour ne pas bloquer le projet.
+  await prisma.audit.updateMany({
+    where: { projectId, status: "QUEUED", queuedAt: { lt: new Date(Date.now() - QUEUED_STALE_MS) } },
+    data: { status: "CANCELED", finishedAt: new Date(), errorCode: "QUEUE_TIMEOUT" },
   });
-  if (running) return { ok: false, error: "ALREADY_RUNNING" };
+  const pending = await prisma.audit.findFirst({ where: { projectId, status: { in: ["QUEUED", "RUNNING"] } } });
+  if (pending) return { ok: false, error: "ALREADY_RUNNING" };
 
   const context: ScoringContext = {
     companyName: project.companyName,
@@ -49,39 +41,24 @@ export async function runHomepageAudit(
     country: project.country,
     geoQueries: project.geoQueries,
   };
-
   const audit = await prisma.audit.create({
     data: {
       projectId,
-      status: "RUNNING",
-      startedAt: new Date(),
+      status: "QUEUED",
       scoringVersion: SCORING_VERSION,
+      progress: { phase: "queued", pagesDone: 0, pagesTotal: 0 },
+      // Copie figée : modifier le projet ensuite ne change pas cet audit.
       inputSnapshot: { siteUrl: project.siteUrl, ...context, competitors: project.competitors },
     },
   });
-
-  try {
-    const analysis = await (deps.analyze ?? analyzeUrl)(project.siteUrl);
-    const pages: PageInput[] = [
-      analysis.ok
-        ? { role: "home", url: project.siteUrl, ok: true, analysis: analysis.value }
-        : { role: "home", url: project.siteUrl, ok: false, error: analysis.error },
-    ];
-    const result = scoreSite({ context, pages, site: {} });
-    await prisma.$transaction((tx) => saveAuditResult(tx, audit.id, pages, result));
-    return { ok: true, auditId: audit.id };
-  } catch (error) {
-    logger.error("audit.run_failed", { auditId: audit.id, error });
-    await prisma.audit.update({ where: { id: audit.id }, data: { status: "FAILED", finishedAt: new Date(), errorCode: "INTERNAL" } });
-    return { ok: false, error: "INTERNAL" };
-  }
+  return { ok: true, auditId: audit.id };
 }
 
 export async function listAudits(userId: string, projectId: string) {
   return prisma.audit.findMany({
     where: { projectId, project: { userId } },
     orderBy: { queuedAt: "desc" },
-    select: { id: true, status: true, scoreTotal: true, queuedAt: true, finishedAt: true, isDemo: true },
+    select: { id: true, status: true, scoreTotal: true, queuedAt: true, finishedAt: true, isDemo: true, progress: true },
   });
 }
 
@@ -94,5 +71,6 @@ export async function getAuditReport(userId: string, auditId: string) {
   if (!audit) return null;
   const snapshot = audit.reportSnapshot as ScoringResult | null;
   const report = snapshot && typeof snapshot === "object" && snapshot.scoringVersion?.startsWith("cite-") ? snapshot : null;
-  return { audit, project: audit.project, report };
+  // Durée d'attente calculée ici (et non pendant le rendu) pour l'affichage de la progression.
+  return { audit, project: audit.project, report, queuedForMs: Date.now() - audit.queuedAt.getTime() };
 }

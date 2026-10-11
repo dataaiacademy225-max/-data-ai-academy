@@ -1,7 +1,7 @@
 import "server-only";
 import { logger } from "@/lib/logger";
 import { extractPageFacts } from "@/server/crawler/extract";
-import { createRobotsChecker, type RobotsDecision } from "@/server/crawler/robots";
+import { createRobotsChecker, type RobotsChecker, type RobotsDecision } from "@/server/crawler/robots";
 import { DEFAULT_LIMITS, defaultNetworkPolicy, safeFetch } from "@/server/crawler/safe-fetch";
 import type { CrawlError, FetchLimits, NetworkPolicy, Result, UrlAnalysis } from "@/server/crawler/types";
 import { checkUrl, redactUrl } from "@/server/crawler/url-guard";
@@ -14,7 +14,15 @@ const ROBOTS_LIMITS: Partial<FetchLimits> = { timeoutMs: 5_000, maxBytes: 512 * 
 export type AnalyzeOptions = {
   policy?: NetworkPolicy;
   limits?: Partial<FetchLimits>;
+  /** Vérificateur robots.txt partagé entre plusieurs pages d'un même site (évite de le retélécharger). */
+  robots?: RobotsChecker;
 };
+
+/** Vérificateur robots.txt utilisant les mêmes protections réseau que les pages. */
+export function createSiteRobotsChecker(policy: NetworkPolicy, timeoutMs: number): RobotsChecker {
+  const robotsLimits = { ...ROBOTS_LIMITS, timeoutMs: Math.min(ROBOTS_LIMITS.timeoutMs!, timeoutMs) };
+  return createRobotsChecker((robotsUrl) => safeFetch(robotsUrl, { policy, limits: robotsLimits, accept: "text/plain,*/*;q=0.1" }));
+}
 
 function failure(error: CrawlError): Result<never> {
   // Les erreurs attendues (site injoignable, 404…) sont des constats d'audit, pas des pannes.
@@ -33,10 +41,7 @@ export async function analyzeUrl(rawUrl: string, options: AnalyzeOptions = {}): 
   const checked = checkUrl(rawUrl, policy);
   if (!checked.ok) return failure(checked.error);
 
-  const robotsLimits = { ...ROBOTS_LIMITS, timeoutMs: Math.min(ROBOTS_LIMITS.timeoutMs!, limits.timeoutMs) };
-  const robots = createRobotsChecker((robotsUrl) =>
-    safeFetch(robotsUrl, { policy, limits: robotsLimits, accept: "text/plain,*/*;q=0.1" }),
-  );
+  const robots = options.robots ?? createSiteRobotsChecker(policy, limits.timeoutMs);
   let lastDecision: RobotsDecision | undefined;
 
   try {

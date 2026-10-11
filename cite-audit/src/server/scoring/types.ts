@@ -1,4 +1,6 @@
-import type { CrawlError, UrlAnalysis } from "@/server/crawler/types";
+import type { CrawledPage, PageRole } from "@/server/crawler/types";
+
+export type { PageRole };
 
 /**
  * Types du moteur de scoring CITE. Le moteur est une fonction pure :
@@ -19,12 +21,8 @@ export type Effort = "faible" | "moyen" | "élevé";
  */
 export type CriterionStatus = "PASS" | "PARTIAL" | "FAIL" | "NOT_APPLICABLE" | "NOT_VERIFIED";
 
-export type PageRole = "home" | "offer" | "about" | "contact" | "other";
-
-/** Une page soumise à l'analyse : réussie (faits observés) ou en échec (raison connue). */
-export type PageInput =
-  | { role: PageRole; url: string; ok: true; analysis: UrlAnalysis }
-  | { role: PageRole; url: string; ok: false; error: CrawlError };
+/** Une page soumise au scoring : réussie (faits observés) ou en échec (raison connue). */
+export type PageInput = CrawledPage;
 
 /** Observations à l'échelle du site. Absentes = non analysées = critère « non vérifié ». */
 export type SiteSignals = {

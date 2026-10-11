@@ -34,16 +34,30 @@ export function decideFromRobotsFetch(fetched: Result<FetchedResource>, robotsUr
   return { allowed: false, status: "UNREACHABLE", cause: fetched.error };
 }
 
+export type RobotsChecker = ((pageUrl: URL) => Promise<RobotsDecision>) & {
+  /** Adresses des plans de site déclarées par les lignes « Sitemap: » du robots.txt de cette origine. */
+  sitemaps: (origin: string) => Promise<string[]>;
+};
+
 /** Vérificateur avec cache par origine : robots.txt n'est téléchargé qu'une fois par site. */
-export function createRobotsChecker(fetchRobots: (robotsUrl: URL) => Promise<Result<FetchedResource>>) {
+export function createRobotsChecker(fetchRobots: (robotsUrl: URL) => Promise<Result<FetchedResource>>): RobotsChecker {
   const cache = new Map<string, Promise<Result<FetchedResource>>>();
-  return async (pageUrl: URL): Promise<RobotsDecision> => {
-    const robotsUrl = new URL("/robots.txt", pageUrl.origin);
-    let pending = cache.get(pageUrl.origin);
+  const load = (origin: string) => {
+    let pending = cache.get(origin);
     if (!pending) {
-      pending = fetchRobots(robotsUrl);
-      cache.set(pageUrl.origin, pending);
+      pending = fetchRobots(new URL("/robots.txt", origin));
+      cache.set(origin, pending);
     }
-    return decideFromRobotsFetch(await pending, robotsUrl.toString(), pageUrl.toString());
+    return pending;
   };
+  const check = async (pageUrl: URL): Promise<RobotsDecision> => {
+    const robotsUrl = new URL("/robots.txt", pageUrl.origin);
+    return decideFromRobotsFetch(await load(pageUrl.origin), robotsUrl.toString(), pageUrl.toString());
+  };
+  const sitemaps = async (origin: string): Promise<string[]> => {
+    const fetched = await load(origin);
+    if (!fetched.ok) return [];
+    return robotsParser(new URL("/robots.txt", origin).toString(), fetched.value.body).getSitemaps();
+  };
+  return Object.assign(check, { sitemaps });
 }

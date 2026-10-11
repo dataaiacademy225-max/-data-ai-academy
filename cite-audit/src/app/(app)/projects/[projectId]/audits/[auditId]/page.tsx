@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AuditProgress } from "@/components/report/audit-progress";
 import { PillarSection } from "@/components/report/pillar-section";
 import { PrintButton } from "@/components/report/print-button";
 import { RecommendationCard } from "@/components/report/recommendation-card";
@@ -8,7 +9,7 @@ import { PillarMeter, ScoreHero } from "@/components/report/score-summary";
 import { PriorityBadge } from "@/components/report/labels";
 import { Badge } from "@/components/ui/badge";
 import { requireUser } from "@/lib/session";
-import type { Pillar, Priority } from "@/server/scoring/types";
+import type { PageRole, Pillar, Priority } from "@/server/scoring/types";
 import { getAuditReport } from "@/server/services/audits";
 
 export const metadata: Metadata = { title: "Rapport d'audit" };
@@ -19,7 +20,16 @@ const PRIORITY_SECTIONS: { priority: Priority; title: string; intro: string }[] 
   { priority: "IMPORTANT", title: "Ensuite", intro: "Ces points réduisent nettement la compréhension ou la conversion." },
   { priority: "RECOMMANDE", title: "Pour aller plus loin", intro: "Des optimisations utiles mais non bloquantes." },
 ];
-const ROLE_LABEL = { home: "Accueil", offer: "Offre", about: "À propos", contact: "Contact", other: "Autre" } as const;
+const ROLE_LABEL: Record<PageRole, string> = {
+  home: "Accueil",
+  offer: "Offre",
+  about: "À propos",
+  contact: "Contact",
+  case_study: "Étude de cas",
+  faq: "FAQ",
+  blog: "Article",
+  other: "Autre page",
+};
 const dateTime = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" });
 
 export default async function AuditReportPage({ params }: { params: Promise<{ projectId: string; auditId: string }> }) {
@@ -29,6 +39,7 @@ export default async function AuditReportPage({ params }: { params: Promise<{ pr
   if (!data || data.project.id !== projectId) notFound();
   const { audit, project, report } = data;
   const nothingMeasured = report?.coverage === 0;
+  const skipped = Number((audit.progress as { skipped?: number } | null)?.skipped ?? 0);
   const NOTHING = "Rien n'a pu être mesuré : voir la section « Limites ».";
 
   return (
@@ -50,11 +61,13 @@ export default async function AuditReportPage({ params }: { params: Promise<{ pr
         </p>
       </header>
 
-      {!report ? (
+      {audit.status === "QUEUED" || audit.status === "RUNNING" ? (
+        <AuditProgress status={audit.status} progress={audit.progress as { phase?: string; pagesDone?: number; pagesTotal?: number } | null} queuedForMs={data.queuedForMs} />
+      ) : !report ? (
         <p className="rounded-md border border-border bg-card p-4">
-          {audit.status === "FAILED"
-            ? "L'audit n'a pas pu aboutir. Relancez-le depuis la page du projet."
-            : "L'audit est en cours ou n'a pas encore produit de rapport."}
+          {audit.status === "CANCELED"
+            ? "Cet audit a été annulé car il n'a pas démarré à temps. Relancez-le depuis la page du projet."
+            : "L'audit n'a pas pu aboutir. Relancez-le depuis la page du projet."}
         </p>
       ) : (
         <>
@@ -167,7 +180,7 @@ export default async function AuditReportPage({ params }: { params: Promise<{ pr
               Limites et éléments non vérifiés
             </h2>
             <div className="space-y-1 text-sm">
-              <h3 className="font-semibold">Pages analysées</h3>
+              <h3 className="font-semibold">Pages analysées ({report.analyzedPages.filter((p) => p.ok).length} sur {report.analyzedPages.length} tentées)</h3>
               <ul className="space-y-1">
                 {report.analyzedPages.map((p) => (
                   <li key={p.url} className="break-all">
@@ -176,6 +189,11 @@ export default async function AuditReportPage({ params }: { params: Promise<{ pr
                 ))}
               </ul>
             </div>
+            {skipped > 0 && (
+              <p className="text-sm text-muted-foreground">
+                {skipped} page(s) sélectionnée(s) n&apos;ont pas été analysées : la durée maximale de l&apos;audit a été atteinte.
+              </p>
+            )}
             {report.notVerified.length > 0 && (
               <div className="space-y-1 text-sm">
                 <h3 className="font-semibold">Critères non vérifiés ({report.notVerified.length})</h3>

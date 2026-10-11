@@ -135,3 +135,23 @@ export type UrlAnalysis = {
   robotsTxt: "ALLOWED" | "NO_ROBOTS_TXT";
   facts: PageFacts;
 };
+
+/** Rôle d'une page dans le parcours du visiteur (déduit de son adresse et du texte des liens). */
+export type PageRole = "home" | "offer" | "about" | "contact" | "case_study" | "faq" | "blog" | "other";
+
+/** Une page soumise à l'analyse : réussie (faits observés) ou en échec (raison connue). */
+export type CrawledPage =
+  | { role: PageRole; url: string; ok: true; analysis: UrlAnalysis }
+  | { role: PageRole; url: string; ok: false; error: CrawlError };
+
+export type SitemapResult = {
+  /** Un fichier sitemap a été trouvé (même invalide). */
+  found: boolean;
+  validXml: boolean;
+  /** Nombre d'adresses déclarées (toutes, y compris hors du site). */
+  urlCount: number;
+  /** Adresses du site retenues (plafonnées). */
+  urls: string[];
+  /** Fichiers lus. */
+  sources: string[];
+};

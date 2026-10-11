@@ -6,7 +6,7 @@ SaaS d'audit des signaux observables qui peuvent influencer la visibilité d'une
 
 Conception complète : [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-## État actuel : socle, analyse d'URL, scoring CITE et rapport
+## État actuel : socle, exploration du site (worker), scoring CITE et rapport
 
 - Inscription, connexion, déconnexion (Better Auth, sessions en base).
 - Tableau de bord (vide ou liste des projets).
@@ -17,9 +17,11 @@ Conception complète : [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 - Module d'analyse d'une URL (`src/server/crawler`, côté serveur uniquement) : blocage des adresses locales/privées (y compris via DNS ou redirection), robots.txt, délai de 10 s, 2 Mo maximum, 5 redirections maximum, extraction des faits (title, meta, H1/H2, texte visible, liens, canonical, robots, JSON-LD, Open Graph, CTA, preuves).
 
 - Moteur de scoring CITE (`src/server/scoring`, fonction pure `scoreSite`) : 32 critères, score sur 100 et par pilier (25 / 30 / 25 / 20), forces, faiblesses, recommandations triées par priorité. Chaque point est justifié (explication + preuve) ; une donnée non analysée donne « non vérifié », jamais une conclusion.
-- Audit de la page d'accueil depuis la page du projet, historique des audits, rapport lisible par un dirigeant (synthèse, plan d'action, détail des critères, limites) imprimable en PDF depuis le navigateur.
+- Exploration de 10 à 15 pages par audit (`src/server/crawler/crawl-site.ts`) : accueil, plan du site (robots.txt puis `/sitemap.xml`), sélection des pages clés (contact, à propos, offres, études de cas, FAQ, articles), pause de 0,5 s entre deux pages, durée maximale 2 min 30, liens cassés constatés.
+- File d'attente PostgreSQL + worker séparé (`pnpm worker`) : un audit n'est jamais traité deux fois, un audit abandonné est repris (3 tentatives maximum), progression affichée en direct.
+- Historique des audits, rapport lisible par un dirigeant (synthèse, plan d'action, détail des critères, limites) imprimable en PDF depuis le navigateur.
 
-Pas encore : exploration de plusieurs pages, sitemap, vitesse (PageSpeed), worker, indice GEO, plans à 30/90 jours, export PDF serveur, requêtes IA.
+Pas encore : vitesse (PageSpeed), indice GEO, plans à 30/90 jours, export PDF serveur, requêtes IA.
 
 Limites connues du module d'analyse : le JavaScript des pages n'est pas exécuté (les sites rendus côté client sont signalés `likelyClientRendered`) et un texte masqué par une feuille de style n'est pas détecté. Les CTA et preuves sont des repérages automatiques, chacun accompagné de l'extrait exact pour vérification.
 
@@ -41,6 +43,7 @@ pnpm install                # génère aussi le client Prisma
 pnpm db:migrate             # crée les tables
 pnpm db:seed                # facultatif : données de démonstration
 pnpm dev                    # http://localhost:3000
+pnpm worker                 # dans un 2e terminal : traite les audits en file d'attente
 ```
 
 Sans Docker, créer l'utilisateur et les deux bases à la main :
@@ -56,6 +59,7 @@ CREATE DATABASE cite_audit_test OWNER cite;
 | Commande | Rôle |
 |---|---|
 | `pnpm dev` | Serveur de développement |
+| `pnpm worker` | Worker qui exécute les audits (à lancer à côté de l'application ; arrêt propre avec Ctrl + C) |
 | `pnpm build` / `pnpm start` | Build et serveur de production |
 | `pnpm typecheck` | Vérification TypeScript |
 | `pnpm lint` | ESLint |

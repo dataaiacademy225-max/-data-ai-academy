@@ -6,6 +6,8 @@
 >
 > Écarts retenus pour le scoring (implémenté, barème `cite-1.0.0`) : seuil de couverture minimale de 50 % par pilier en plus du seuil « indicatif » de 70 % ; score global seulement si les 4 piliers sont notés ; contenu rendu par JavaScript → critères de contenu « non vérifiés » ; T2 exige au moins 3 pages analysées ; T5 mesure l'accès en un clic aux offres et au contact (taille du menu non mesurée) ; résultats par critère stockés dans `Audit.reportSnapshot` (pas encore de table `CriterionResult`).
 >
+> Exploration et worker (implémentés) : `Audit.progress` (JSON) pour l'avancement ; verrou renouvelé à chaque progression, audit repris après 5 min sans signe de vie, 3 tentatives maximum ; audit en attente depuis plus de 30 min annulé à la demande suivante ; quotas de sélection par rôle (contact 1, à propos 1, offres 5, études de cas 2, FAQ 1, articles 2) puis complément jusqu'à 15 pages ; mentions légales, fichiers et pages de connexion exclus ; liens cassés = pages liées depuis l'accueil répondant 404/410.
+>
 > CITE Audit mesure des signaux observables. Il ne garantit aucune position dans Google ni aucune citation ou recommandation par une IA. Le score CITE est un indicateur interne à Data & AI Academy.
 
 Sommaire

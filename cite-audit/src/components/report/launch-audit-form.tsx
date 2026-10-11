@@ -9,7 +9,7 @@ export function LaunchAuditForm({ action }: { action: (prev: LaunchAuditState) =
   return (
     <form action={formAction} className="space-y-2">
       <Button type="submit" variant="accent" disabled={pending}>
-        {pending ? "Analyse en cours… (jusqu'à 30 secondes)" : "Lancer l'audit de la page d'accueil"}
+        {pending ? "Mise en file d'attente…" : "Lancer l'audit du site"}
       </Button>
       {state.error && (
         <p role="alert" className="text-sm text-destructive">

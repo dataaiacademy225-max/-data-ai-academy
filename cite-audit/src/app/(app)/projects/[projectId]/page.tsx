@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: "Projet" };
 
 const dateTime = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" });
 const STATUS_LABEL: Record<string, string> = {
-  QUEUED: "En attente",
+  QUEUED: "En file d'attente",
   RUNNING: "En cours",
   SUCCEEDED: "Terminé",
   PARTIAL: "Terminé, score non vérifié",
@@ -66,8 +66,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
             <div className="space-y-1">
               <LaunchAuditForm action={launchAuditAction.bind(null, project.id)} />
               <p className="text-xs text-muted-foreground">
-                Cette version analyse la page d&apos;accueil, dans le respect du fichier robots.txt du site. L&apos;analyse
-                de plusieurs pages arrivera dans une prochaine version.
+                L&apos;audit explore jusqu&apos;à 15 pages publiques (accueil, offres, à propos, contact, références…) dans le
+                respect du fichier robots.txt du site. Comptez une à trois minutes.
               </p>
             </div>
           )}
