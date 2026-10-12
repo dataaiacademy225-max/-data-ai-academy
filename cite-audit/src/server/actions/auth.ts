@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { isAPIError } from "better-auth/api";
 import { z } from "zod";
 import { getAuth } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { signInSchema, signUpSchema } from "@/lib/validation/auth";
 
 export type AuthFormState = {
@@ -32,7 +33,7 @@ export async function signInAction(_prev: AuthFormState, formData: FormData): Pr
       // Message volontairement identique que l'e-mail existe ou non.
       return { error: "E-mail ou mot de passe incorrect.", values: { email: raw.email } };
     }
-    console.error("[auth] échec de connexion inattendu");
+    logger.error("auth.sign_in_failed", { error });
     return { error: "Connexion impossible pour le moment. Réessayez.", values: { email: raw.email } };
   }
   redirect("/dashboard");
@@ -58,7 +59,7 @@ export async function signUpAction(_prev: AuthFormState, formData: FormData): Pr
     if (isAPIError(error)) {
       return { error: "Impossible de créer un compte avec cette adresse e-mail.", values };
     }
-    console.error("[auth] échec d'inscription inattendu");
+    logger.error("auth.sign_up_failed", { error });
     return { error: "Inscription impossible pour le moment. Réessayez.", values };
   }
   redirect("/dashboard");
