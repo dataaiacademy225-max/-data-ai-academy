@@ -85,7 +85,7 @@ cp .env.example .env.production   # remplir : secrets forts, BETTER_AUTH_URL en 
 docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 ```
 
-Le fichier lance PostgreSQL (sans port public), les migrations, l'application (127.0.0.1:3000) et le worker. Placer devant un proxy inverse HTTPS (Caddy, Nginx ou celui de l'hébergeur) qui **remplace** les en-têtes `X-Forwarded-For`, `X-Real-IP` et `X-Forwarded-Proto` : les limites de tentatives s'y fient. Sauvegarder le volume `pgdata` régulièrement.
+Le fichier lance PostgreSQL (sans port public), les migrations, l'application (127.0.0.1:3000) et le worker. Placer devant un proxy inverse HTTPS (Caddy, Nginx ou celui de l'hébergeur) qui **ajoute** l'adresse du visiteur à droite de `X-Forwarded-For` et pose `X-Forwarded-Proto`. Les limites de tentatives lisent l'entrée posée par ce proxy (`TRUSTED_PROXY_COUNT`, 1 par défaut), jamais celles que le visiteur peut écrire lui-même. Sauvegarder le volume `pgdata` régulièrement.
 
 ## Commandes
 

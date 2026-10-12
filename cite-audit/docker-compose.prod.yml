@@ -1,8 +1,8 @@
 # Déploiement sur un serveur (VPS) : base de données, migrations, application et worker.
 # 1. Copier .env.example en .env.production et le remplir (secrets forts, BETTER_AUTH_URL en https).
 # 2. docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
-# 3. Placer devant un proxy inverse HTTPS (Caddy, Nginx, ou celui de l'hébergeur) qui REMPLACE
-#    les en-têtes X-Forwarded-For / X-Real-IP / X-Forwarded-Proto : les limites anti-abus s'y fient.
+# 3. Placer devant un proxy inverse HTTPS (Caddy, Nginx, ou celui de l'hébergeur) qui ajoute l'adresse
+#    du visiteur à droite de X-Forwarded-For (TRUSTED_PROXY_COUNT=1 : un seul proxy devant l'application).
 
 x-app: &app
   build: .
