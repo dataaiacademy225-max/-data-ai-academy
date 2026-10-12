@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth/auth-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +18,17 @@ export default async function SignupPage() {
       </CardHeader>
       <CardContent>
         <AuthForm mode="signup" action={signUpAction} />
+        <p className="mt-3 text-center text-xs text-muted-foreground">
+          En créant un compte, vous acceptez les{" "}
+          <Link className="underline" href="/conditions">
+            conditions d&apos;utilisation
+          </Link>{" "}
+          et la{" "}
+          <Link className="underline" href="/confidentialite">
+            politique de confidentialité
+          </Link>
+          .
+        </p>
       </CardContent>
     </Card>
   );

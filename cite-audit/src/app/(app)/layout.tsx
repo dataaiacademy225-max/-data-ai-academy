@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/session";
 import { signOutAction } from "@/server/actions/auth";
 import { resendVerificationEmailAction } from "@/server/actions/password";
 import { VerifyEmailBanner } from "@/components/auth/verify-email-banner";
+import { LegalLinks } from "@/components/legal/legal-document";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const user = await requireUser();
@@ -33,6 +34,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <footer className="border-t border-border py-4 text-center text-xs text-muted-foreground">
         Le score CITE est un indicateur interne Data &amp; AI Academy, basé sur des signaux observables. Ce
         n&apos;est pas une mesure de Google, ChatGPT, Perplexity ou Gemini.
+        <LegalLinks className="mt-2" />
       </footer>
     </>
   );

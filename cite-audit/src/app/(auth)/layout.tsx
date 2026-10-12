@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { LegalLinks } from "@/components/legal/legal-document";
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-12">
@@ -14,6 +15,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           CITE Audit mesure des signaux observables. Aucune position dans Google ni aucune citation par une IA
           n&apos;est garantie.
         </p>
+        <LegalLinks className="text-center text-xs text-muted-foreground" />
       </div>
     </main>
   );
