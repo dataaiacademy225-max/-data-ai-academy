@@ -10,11 +10,11 @@
 // (pas encore de société immatriculée). Après immatriculation : remplacer `legalStatus`
 // et renseigner `registration` (RCCM, compte contribuable) ; vide = ligne non affichée.
 export const LEGAL_ENTITY = {
-  publisherName: "[À COMPLÉTER : vos prénom et nom]",
+  publisherName: "Steve Junior Kouakou",
   legalStatus: "personne physique exploitant la marque commerciale Data & AI Academy",
   registration: "",
   address: "[À COMPLÉTER : adresse postale, Abidjan, Côte d'Ivoire]",
-  contactEmail: "[À COMPLÉTER : adresse e-mail de contact]",
+  contactEmail: "dataaiacademy225@gmail.com",
   host: "[À COMPLÉTER : nom, adresse et pays de l'hébergeur]",
   emailProvider: "[À COMPLÉTER : prestataire d'envoi d'e-mails et pays]",
   jurisdiction: "[À COMPLÉTER : tribunal compétent, par exemple Abidjan]",
