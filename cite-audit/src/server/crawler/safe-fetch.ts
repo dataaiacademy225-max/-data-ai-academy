@@ -13,7 +13,7 @@ import type {
 } from "@/server/crawler/types";
 import { checkUrl, redactUrl, resolveAllowed } from "@/server/crawler/url-guard";
 
-export const USER_AGENT = "CITE-Audit/0.1 (audit de visibilite; Data & AI Academy)";
+export const USER_AGENT = "GriotCite/0.1 (audit de visibilite; Data & AI Academy; +https://audit.data-ai-academy.com)";
 
 export const DEFAULT_LIMITS: FetchLimits = {
   timeoutMs: 10_000,

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { LegalLinks } from "@/components/legal/legal-document";
+import { BrandName } from "@/components/brand-name";
 
 export default function LegalLayout({ children }: { children: ReactNode }) {
   return (
@@ -8,7 +9,7 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
       <header className="border-b border-border bg-card">
         <div className="mx-auto flex h-14 max-w-3xl items-center px-4">
           <Link href="/" className="font-display text-lg font-bold">
-            CITE <span className="text-accent">Audit</span>
+            <BrandName />
           </Link>
         </div>
       </header>

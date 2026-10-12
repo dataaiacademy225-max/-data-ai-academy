@@ -78,7 +78,7 @@ const emailEnvSchema = z.object({
   EMAIL_TRANSPORT: z.enum(["console", "smtp", "memory"]).default("console"),
   /** smtps://utilisateur:motdepasse@smtp.exemple.com:465 (secret : variable d'environnement uniquement). */
   SMTP_URL: z.url().refine((u) => /^smtps?:\/\//.test(u), "SMTP_URL doit commencer par smtp:// ou smtps://").optional(),
-  EMAIL_FROM: z.string().min(3).max(200).default("CITE Audit <no-reply@localhost>"),
+  EMAIL_FROM: z.string().min(3).max(200).default("GriotCite <no-reply@localhost>"),
 });
 
 export type EmailEnv = z.infer<typeof emailEnvSchema>;

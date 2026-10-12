@@ -13,7 +13,7 @@ function fetched(body: string): Result<FetchedResource> {
 const httpError = (status: number): Result<FetchedResource> => ({ ok: false, error: { code: "HTTP_ERROR", message: "", httpStatus: status } });
 
 describe("isAllowedByRobots", () => {
-  const txt = "User-agent: *\nDisallow: /prive\n\nUser-agent: CITE-Audit\nDisallow: /prive\nDisallow: /interdit-cite\n";
+  const txt = "User-agent: *\nDisallow: /prive\n\nUser-agent: GriotCite\nDisallow: /prive\nDisallow: /interdit-cite\n";
   it.each([
     ["https://site.com/", true],
     ["https://site.com/offres", true],
