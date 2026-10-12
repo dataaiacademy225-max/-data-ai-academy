@@ -107,9 +107,9 @@ Tests (`cite-audit/tests`) : `unit/` (pur, crawler sur serveur local), `integrat
 
 ## Règles de scoring CITE
 
-- Barème `cite-1.0.0` : Clarifier 25, Indexer 30, Tunnel 25, Enclencher 20, soit **32 critères** au total. Toute modification du barème change `SCORING_VERSION`.
+- Barème `cite-1.1.0` : Clarifier 25, Indexer 30, Tunnel 25, Enclencher 20, soit **32 critères** au total. Toute modification du barème change `SCORING_VERSION`.
 - **Critères** : chaque critère renvoie `PASS` / `PARTIAL` / `FAIL` avec une explication, une preuve (URL et extrait exact), les éléments manquants, un niveau de confiance et une priorité (critique, important ou recommandé).
-- **Donnée absente** : `NOT_VERIFIED`, avec `points: null`, jamais 0 et jamais une conclusion. `NOT_APPLICABLE` est exclu du calcul.
+- **Donnée absente** : `NOT_VERIFIED`, avec `points: null`, jamais 0 et jamais une conclusion. `NOT_APPLICABLE` est exclu du calcul. Un accès refusé au robot (401, 403, 429) est « non vérifié », jamais une panne du site.
 - **Contenu illisible sans JavaScript** : les critères qui portent sur ce contenu passent en « non vérifié ». Seul le constat « contenu invisible sans JS » est noté.
 - **Score d'un pilier** = `max × points obtenus / points mesurés`, arrondi à 0,5. Le pilier n'est noté qu'avec au moins 50 % de ses points mesurés ; entre 50 et 70 %, il est « indicatif ».
 - **Score global** : seulement si les 4 piliers sont notés. Sinon « non vérifié », avec la raison.

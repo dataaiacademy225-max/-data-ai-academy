@@ -100,7 +100,15 @@ const ERROR_REASONS: Record<CrawlError["code"], string> = {
   ROBOTS_DISALLOWED: "le fichier robots.txt du site interdit ou empêche l'analyse",
 };
 
+/** Codes HTTP qui signalent un refus d'accès au robot, pas une panne du site. */
+export function isAccessDenied(status: number | undefined): boolean {
+  return status === 401 || status === 403 || status === 429;
+}
+
 export function errorReason(error: CrawlError): string {
+  if (error.code === "HTTP_ERROR" && isAccessDenied(error.httpStatus)) {
+    return `le site a refusé l'accès à notre robot d'analyse (code HTTP ${error.httpStatus}), probablement une protection anti-robot ou une limite de requêtes ; un visiteur peut voir la page normalement`;
+  }
   const base = ERROR_REASONS[error.code];
   return error.httpStatus ? `${base} (code HTTP ${error.httpStatus})` : base;
 }

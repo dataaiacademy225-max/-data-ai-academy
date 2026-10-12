@@ -162,6 +162,16 @@ describe("site inaccessible", () => {
     expect(result.analyzedPages).toEqual([{ url: SITE_URL, role: "home", ok: false, reason: expect.stringContaining("500") }]);
   });
 
+  it.each([401, 403, 429])("accès refusé au robot (HTTP %i) : non vérifié, jamais présenté comme une panne", (status) => {
+    const result = scoreSite(failedInput({ code: "HTTP_ERROR", message: "", httpStatus: status, url: SITE_URL }));
+    expectExplainable(result);
+    expect(result.scoreTotal).toBeNull();
+    expect(criterion(result, "I1")).toMatchObject({ status: "NOT_VERIFIED", points: null, priority: null });
+    expect(result.recommendations).toEqual([]);
+    expect(result.notVerifiedReason).toMatch(/protection anti-robot/);
+    expect(result.notVerifiedReason).toContain(String(status));
+  });
+
   it("délai dépassé : rien n'est conclu, aucune recommandation inventée", () => {
     const result = scoreSite(failedInput({ code: "TIMEOUT", message: "" }));
     expectExplainable(result);

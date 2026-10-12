@@ -7,7 +7,8 @@ export type { PageRole };
  * mêmes données d'analyse → même résultat, sans réseau ni base de données.
  */
 
-export const SCORING_VERSION = "cite-1.0.0";
+/** Changer de version à chaque modification du barème ou d'une règle de notation. */
+export const SCORING_VERSION = "cite-1.1.0";
 
 export type Pillar = "CLARIFIER" | "INDEXER" | "TUNNEL" | "ENCLENCHER";
 export type Priority = "CRITIQUE" | "IMPORTANT" | "RECOMMANDE";

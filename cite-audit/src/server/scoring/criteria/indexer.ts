@@ -2,6 +2,7 @@ import type { JsonLdBlock } from "@/server/crawler/types";
 import { mentionsCompany } from "@/server/scoring/criteria/clarifier";
 import {
   contentUnreadable,
+  isAccessDenied,
   fail,
   homeEvidence,
   homeNotVerified,
@@ -20,6 +21,11 @@ const pagesEvidence = (view: SiteView, pick: (p: SiteView["okPages"][number]) =>
   view.okPages.slice(0, 5).map((p) => ({ url: p.analysis.finalUrl, label, excerpt: pick(p) ?? "absent" }));
 
 export const I1: Rule = (view) => {
+  // 401 / 403 / 429 : accès refusé à notre robot (pare-feu, protection anti-robot, limite de débit).
+  // Un visiteur voit peut-être la page normalement : on ne conclut rien.
+  if (view.homeError?.code === "HTTP_ERROR" && isAccessDenied(view.homeError.httpStatus)) {
+    return homeNotVerified(view);
+  }
   if (view.homeError?.code === "HTTP_ERROR") {
     return fail(
       `La page d'accueil répond par une erreur (code HTTP ${view.homeError.httpStatus}).`,
