@@ -14,7 +14,7 @@ export const LEGAL_ENTITY = {
   legalStatus: "personne physique exploitant la marque commerciale Data & AI Academy",
   registration: "",
   address: "[À COMPLÉTER : adresse postale, Abidjan, Côte d'Ivoire]",
-  contactEmail: "dataaiacademy225@gmail.com",
+  contactEmail: "steve@data-ai-academy.com",
   host: "[À COMPLÉTER : nom, adresse et pays de l'hébergeur]",
   emailProvider: "[À COMPLÉTER : prestataire d'envoi d'e-mails et pays]",
   jurisdiction: "[À COMPLÉTER : tribunal compétent, par exemple Abidjan]",
