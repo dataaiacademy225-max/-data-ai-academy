@@ -52,10 +52,14 @@ model User {
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  // Comptes inactifs : avertissement après 3 ans sans connexion, suppression 30 jours plus tard.
+  lastActiveAt       DateTime  @default(now()) // mis à jour à chaque connexion ou renouvellement de session
+  inactivityWarnedAt DateTime? // date de l'e-mail d'avertissement ; remis à null à la reconnexion
   sessions      Session[]
   accounts      Account[]
   projects      Project[]
 
+  @@index([lastActiveAt])
   @@map("user")
 }
 

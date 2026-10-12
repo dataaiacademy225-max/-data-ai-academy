@@ -3,13 +3,15 @@
  * Lancement : `pnpm worker` (dans un second terminal, à côté de `pnpm dev`).
  */
 import "dotenv/config";
-import { getRetentionEnv } from "@/lib/env";
+import { getRetentionEnv, getServerEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/db";
 import { processAiRun } from "@/server/ai-visibility/process-run";
 import { claimNextAiRun } from "@/server/ai-visibility/queue";
 import { processAudit } from "@/server/jobs/process-audit";
 import { claimNextAudit } from "@/server/jobs/queue";
+import { sendEmail } from "@/server/email/send";
+import { processInactiveAccounts } from "@/server/services/inactive-accounts";
 import { purgeExpiredData } from "@/server/services/retention";
 
 const POLL_MS = 2_000;
@@ -31,6 +33,16 @@ async function main() {
         logger.info("worker.purge_done", { expiredLogins: sessions, ...rest });
       } catch (error) {
         logger.error("worker.purge_failed", { error });
+      }
+      try {
+        const retention = getRetentionEnv();
+        const inactive = await processInactiveAccounts(
+          { inactiveDays: retention.INACTIVE_ACCOUNT_DAYS, graceDays: retention.INACTIVE_ACCOUNT_GRACE_DAYS },
+          { sendEmail, appUrl: getServerEnv().BETTER_AUTH_URL },
+        );
+        logger.info("worker.inactive_accounts_done", inactive);
+      } catch (error) {
+        logger.error("worker.inactive_accounts_failed", { error });
       }
     }
     let auditId: string | null = null;

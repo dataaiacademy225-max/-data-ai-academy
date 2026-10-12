@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { PASSWORD_MIN_LENGTH } from "@/lib/validation/constants";
 import { sendEmail } from "@/server/email/send";
 import { resetPasswordEmail, verifyEmailEmail } from "@/server/email/templates";
+import { markUserActive } from "@/server/services/inactive-accounts";
 
 const RESET_TOKEN_SECONDS = 60 * 60; // 1 heure
 const VERIFY_TOKEN_SECONDS = 24 * 60 * 60; // 24 heures
@@ -49,6 +50,13 @@ function createAuth() {
       window: 60,
       max: 20,
       storage: "database",
+    },
+    // Dernière activité du compte (règle des comptes inactifs) : connexion ou renouvellement de session.
+    databaseHooks: {
+      session: {
+        create: { after: async (session) => markUserActive(session.userId) },
+        update: { after: async (session) => markUserActive(session.userId) },
+      },
     },
     // nextCookies doit rester le dernier plugin : il pose les cookies depuis les server actions.
     plugins: [nextCookies()],

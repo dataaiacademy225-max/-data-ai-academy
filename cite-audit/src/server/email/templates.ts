@@ -36,6 +36,26 @@ export function resetPasswordEmail(input: { name: string; url: string; validity:
   };
 }
 
+export function inactivityWarningEmail(input: {
+  name: string;
+  url: string;
+  inactiveFor: string;
+  deletionDate: string;
+}): EmailContent {
+  const paragraphs = [
+    `Bonjour ${input.name},`,
+    `Vous ne vous êtes pas connecté à votre compte CITE Audit depuis ${input.inactiveFor}. Pour protéger vos données, les comptes inactifs sont supprimés.`,
+    `Sans connexion de votre part, votre compte et toutes ses données (projets, audits, mesures IA) seront définitivement supprimés le ${input.deletionDate}.`,
+    "Pour garder votre compte, il suffit de vous connecter avant cette date.",
+  ];
+  const footer = "Vous ne souhaitez plus utiliser CITE Audit ? Ignorez cet e-mail : la suppression se fera automatiquement.";
+  return {
+    subject: "Votre compte CITE Audit sera supprimé faute de connexion",
+    text: [...paragraphs, `Lien : ${input.url}`, footer, SIGNATURE].join("\n\n"),
+    html: layout(paragraphs, { url: input.url, label: "Me connecter et garder mon compte" }, `${footer} — ${SIGNATURE}`),
+  };
+}
+
 export function verifyEmailEmail(input: { name: string; url: string; validity: string }): EmailContent {
   const paragraphs = [
     `Bonjour ${input.name},`,

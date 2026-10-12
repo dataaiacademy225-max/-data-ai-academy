@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getEmailEnv } from "@/lib/env";
-import { resetPasswordEmail, verifyEmailEmail } from "@/server/email/templates";
+import { inactivityWarningEmail, resetPasswordEmail, verifyEmailEmail } from "@/server/email/templates";
 import { findForbiddenWording } from "@/server/scoring/wording-guard";
 
 const url = "https://app.exemple.com/reset-password?token=abc";
@@ -9,6 +9,8 @@ describe("gabarits d'e-mails", () => {
   for (const [name, build] of [
     ["changement de mot de passe", resetPasswordEmail],
     ["confirmation d'adresse", verifyEmailEmail],
+    ["avertissement d'inactivité", (i: { name: string; url: string; validity: string }) =>
+      inactivityWarningEmail({ name: i.name, url: i.url, inactiveFor: "3 ans", deletionDate: "1 heure" })],
   ] as const) {
     it(`${name} : lien présent, nom échappé, aucune promesse interdite`, () => {
       const email = build({ name: `<script>alert("x")</script> & Co`, url, validity: "1 heure" });

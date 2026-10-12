@@ -39,6 +39,14 @@ describe("pages légales", () => {
     expect(unlimited).not.toContain("toujours gardé");
   });
 
+  it("décrivent la règle des comptes inactifs (3 ans, puis 30 jours)", () => {
+    const privacy = JSON.stringify(pages.confidentialite);
+    expect(privacy).toContain("après 3 ans sans connexion, vous recevez un e-mail d'avertissement");
+    expect(privacy).toContain("dans les 30 jours qui suivent");
+    const off = JSON.stringify(legalPages({ auditRetentionDays: 0, aiRunRetentionDays: 0, inactiveAccountDays: 0 }).confidentialite);
+    expect(off).toContain("aucune suppression automatique");
+  });
+
   it("formate les durées", () => {
     expect(formatRetention(730)).toBe("2 ans");
     expect(formatRetention(365)).toBe("1 an");

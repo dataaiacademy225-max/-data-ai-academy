@@ -43,7 +43,22 @@ export function formatRetention(days: number): string {
   return `${days} jours`;
 }
 
-export function legalPages(params: { auditRetentionDays: number; aiRunRetentionDays: number }): Record<LegalSlug, LegalPage> {
+export type LegalParams = {
+  auditRetentionDays: number;
+  aiRunRetentionDays: number;
+  /** Comptes inactifs : avertissement après N jours sans connexion (0 = jamais), suppression après le délai de grâce. */
+  inactiveAccountDays?: number;
+  inactiveAccountGraceDays?: number;
+};
+
+function inactiveAccountRule(days: number, graceDays: number): string {
+  if (days === 0) return "Compte inactif : aucune suppression automatique ; le compte reste actif jusqu'à sa suppression par vous.";
+  return `Compte inactif : après ${formatRetention(days)} sans connexion, vous recevez un e-mail d'avertissement. Sans reconnexion dans les ${graceDays} jours qui suivent, le compte et toutes ses données sont définitivement supprimés.`;
+}
+
+export function legalPages(params: LegalParams): Record<LegalSlug, LegalPage> {
+  const inactiveDays = params.inactiveAccountDays ?? 1095;
+  const graceDays = params.inactiveAccountGraceDays ?? 30;
   const e = LEGAL_ENTITY;
   return {
     "mentions-legales": {
@@ -107,6 +122,7 @@ export function legalPages(params: { auditRetentionDays: number; aiRunRetentionD
           paragraphs: ["Une purge automatique des données expirées s'exécute chaque jour :"],
           list: [
             "Compte et projets : jusqu'à leur suppression par vous (bouton « Supprimer » dans les paramètres du projet ou dans « Mon compte »). La suppression est immédiate et définitive.",
+            inactiveAccountRule(inactiveDays, graceDays),
             historyRetention("Audits", params.auditRetentionDays, "le dernier audit de chaque projet est toujours gardé."),
             historyRetention("Mesures de visibilité IA et réponses reçues", params.aiRunRetentionDays, "la dernière mesure de chaque projet est toujours gardée."),
             "Sessions de connexion : 7 jours au plus. Lien de changement de mot de passe : 1 heure. Lien de confirmation d'adresse : 24 heures.",

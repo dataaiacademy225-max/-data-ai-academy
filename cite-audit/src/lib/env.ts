@@ -54,6 +54,10 @@ const retentionEnvSchema = z.object({
   AUDIT_RETENTION_DAYS: z.coerce.number().int().min(0).max(3650).default(0).catch(0),
   /** Mesures de visibilité IA (réponses brutes comprises) conservées N jours ; la plus récente de chaque projet est gardée. 0 (défaut) = gardées tant que le projet existe. */
   AI_RUN_RETENTION_DAYS: z.coerce.number().int().min(0).max(3650).default(0).catch(0),
+  /** Compte sans connexion depuis N jours : e-mail d'avertissement (défaut 1095 = 3 ans). 0 = jamais. */
+  INACTIVE_ACCOUNT_DAYS: z.coerce.number().int().min(0).max(3650).default(1095).catch(1095),
+  /** Délai entre l'avertissement et la suppression, sans reconnexion (défaut 30 jours, minimum 14). */
+  INACTIVE_ACCOUNT_GRACE_DAYS: z.coerce.number().int().min(14).max(365).default(30).catch(30),
 });
 
 export type RetentionEnv = z.infer<typeof retentionEnvSchema>;

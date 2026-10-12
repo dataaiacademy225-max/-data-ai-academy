@@ -10,6 +10,8 @@ export default function Page() {
   const page = legalPages({
     auditRetentionDays: retention.AUDIT_RETENTION_DAYS,
     aiRunRetentionDays: retention.AI_RUN_RETENTION_DAYS,
+    inactiveAccountDays: retention.INACTIVE_ACCOUNT_DAYS,
+    inactiveAccountGraceDays: retention.INACTIVE_ACCOUNT_GRACE_DAYS,
   })["conditions"];
   return <LegalDocument page={page} updatedAt={LEGAL_ENTITY.updatedAt} draft={hasPlaceholders()} />;
 }

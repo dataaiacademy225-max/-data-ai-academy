@@ -21,7 +21,10 @@ export type PurgeReport = {
  * - jamais un travail en attente ou en cours, jamais les données de démonstration (gérées par le seed).
  * Les pages analysées, recommandations et réponses IA suivent en cascade.
  */
-export async function purgeExpiredData(config: RetentionEnv, now = new Date()): Promise<PurgeReport> {
+export async function purgeExpiredData(
+  config: Pick<RetentionEnv, "AUDIT_RETENTION_DAYS" | "AI_RUN_RETENTION_DAYS">,
+  now = new Date(),
+): Promise<PurgeReport> {
   const sessions = (await prisma.session.deleteMany({ where: { expiresAt: { lt: now } } })).count;
   const verifications = (await prisma.verification.deleteMany({ where: { expiresAt: { lt: now } } })).count;
   const limits = await purgeExpiredLimits(now);
