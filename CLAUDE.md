@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 Dépôt de Data & AI Academy :
-- `index.html` (+ `steve-junior.jpg`) : ancienne copie du site vitrine, **plus utilisée**. Le site en ligne (data-ai-academy.com) est géré sur Lovable. Ignorer ces fichiers : ni les modifier, ni s'en servir comme référence.
+- Le site vitrine (data-ai-academy.com) est géré sur Lovable, hors de ce dépôt. `steve-junior.jpg` est un reste de l'ancienne copie : l'ignorer.
 - Domaine `data-ai-academy.com` (Namecheap) : CITE Audit sera servi sur le sous-domaine `audit.data-ai-academy.com`.
 - `cite-audit/` : SaaS **CITE Audit**. Toutes les commandes ci-dessous se lancent depuis ce dossier.
 
