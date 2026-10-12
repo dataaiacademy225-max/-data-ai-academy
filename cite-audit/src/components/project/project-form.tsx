@@ -19,8 +19,15 @@ import {
 
 export function ProjectForm({
   action,
+  initialValues,
+  submitLabel = "Créer le projet",
+  cancelHref = "/dashboard",
 }: {
   action: (prev: ProjectFormState, formData: FormData) => Promise<ProjectFormState>;
+  /** Valeurs de départ (modification d'un projet existant). */
+  initialValues?: Record<string, string>;
+  submitLabel?: string;
+  cancelHref?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   const [clientErrors, setClientErrors] = useState<ProjectFieldErrors | null>(null);
@@ -37,7 +44,7 @@ export function ProjectForm({
   }
 
   const errors = clientErrors ?? state.fieldErrors ?? {};
-  const v = state.values ?? {};
+  const v = state.values ?? initialValues ?? {};
   // La clé force le remontage du formulaire quand le serveur renvoie des valeurs (React réinitialise le formulaire après l'action).
   const formKey = JSON.stringify(v);
   const invalid = (field: keyof ProjectFieldErrors) => (errors[field] ? true : undefined);
@@ -181,11 +188,11 @@ export function ProjectForm({
       </div>
 
       <div className="flex flex-wrap justify-end gap-3">
-        <Link href="/dashboard" className={buttonVariants({ variant: "outline" })}>
+        <Link href={cancelHref} className={buttonVariants({ variant: "outline" })}>
           Annuler
         </Link>
         <Button type="submit" variant="accent" disabled={pending}>
-          {pending ? "Enregistrement…" : "Créer le projet"}
+          {pending ? "Enregistrement…" : submitLabel}
         </Button>
       </div>
     </form>

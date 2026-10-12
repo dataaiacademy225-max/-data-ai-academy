@@ -39,7 +39,13 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
         <CardHeader>
           <div className="flex items-start justify-between gap-2">
             <CardTitle className="text-2xl">{project.companyName}</CardTitle>
-            {project.isDemo && <Badge variant="demo">Démo</Badge>}
+            {project.isDemo ? (
+              <Badge variant="demo">Démo</Badge>
+            ) : (
+              <Link href={`/projects/${project.id}/settings`} className="text-sm text-muted-foreground underline-offset-2 hover:underline">
+                Modifier ou supprimer
+              </Link>
+            )}
           </div>
           <CardDescription className="break-all">{project.siteUrl}</CardDescription>
         </CardHeader>
