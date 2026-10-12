@@ -17,6 +17,8 @@ export type LaunchError = "NOT_FOUND" | "DEMO_PROJECT" | "QUOTA" | "ALREADY_RUNN
 export async function requestAudit(
   userId: string,
   projectId: string,
+  /** null = pas de limite par jour (compte propriétaire). Les autres protections restent actives. */
+  options: { dailyLimit?: number | null } = {},
 ): Promise<{ ok: true; auditId: string } | { ok: false; error: LaunchError }> {
   // Vérifications et création dans une même transaction, sous verrou par utilisateur :
   // deux demandes simultanées ne peuvent ni créer deux audits ni dépasser le quota.
@@ -27,9 +29,12 @@ export async function requestAudit(
     if (!project) return { ok: false as const, error: "NOT_FOUND" as const };
     if (project.isDemo) return { ok: false as const, error: "DEMO_PROJECT" as const };
 
-    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const recent = await tx.audit.count({ where: { project: { userId }, queuedAt: { gte: since } } });
-    if (recent >= MAX_AUDITS_PER_DAY) return { ok: false as const, error: "QUOTA" as const };
+    const dailyLimit = options.dailyLimit === undefined ? MAX_AUDITS_PER_DAY : options.dailyLimit;
+    if (dailyLimit !== null) {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const recent = await tx.audit.count({ where: { project: { userId }, queuedAt: { gte: since } } });
+      if (recent >= dailyLimit) return { ok: false as const, error: "QUOTA" as const };
+    }
 
     // Un audit resté en attente trop longtemps est annulé pour ne pas bloquer le projet.
     await tx.audit.updateMany({

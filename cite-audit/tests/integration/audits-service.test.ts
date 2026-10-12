@@ -78,4 +78,23 @@ describe("requestAudit", () => {
     expect((await requestAudit(user.id, project.id)).ok).toBe(true);
     expect(await prisma.audit.findUniqueOrThrow({ where: { id: old.id } })).toMatchObject({ status: "CANCELED", errorCode: "QUEUE_TIMEOUT" });
   });
+
+  it("sans limite par jour (propriétaire) : au-delà de 20 audits, toujours accepté ; un seul en cours par projet", async () => {
+    const user = await createUser();
+    const project = await createProject(user.id, projectInput());
+    const others = await createProject(user.id, projectInput({ companyName: "Autre" }));
+    await prisma.audit.createMany({
+      data: Array.from({ length: MAX_AUDITS_PER_DAY }, () => ({
+        projectId: others.id,
+        status: "SUCCEEDED" as const,
+        scoringVersion: "t",
+        inputSnapshot: {},
+      })),
+    });
+
+    expect(await requestAudit(user.id, project.id)).toEqual({ ok: false, error: "QUOTA" });
+    const first = await requestAudit(user.id, project.id, { dailyLimit: null });
+    expect(first.ok).toBe(true);
+    expect(await requestAudit(user.id, project.id, { dailyLimit: null })).toEqual({ ok: false, error: "ALREADY_RUNNING" });
+  });
 });

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { isOwner } from "@/lib/access";
 import { requireUser } from "@/lib/session";
 import { signOutAction } from "@/server/actions/auth";
 import { resendVerificationEmailAction } from "@/server/actions/password";
@@ -18,6 +19,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           </Link>
           <div className="flex items-center gap-3 text-sm">
             <span className="hidden text-muted-foreground sm:inline">{user.email}</span>
+            {isOwner(user) && (
+              <span className="rounded-full border border-accent px-2 py-0.5 text-xs font-medium" title="Compte propriétaire : pas de limite d'audits par jour">
+                <span aria-hidden="true">★ </span>Propriétaire
+              </span>
+            )}
             <Link href="/settings/account" className="text-muted-foreground hover:text-foreground hover:underline">
               Mon compte
             </Link>
