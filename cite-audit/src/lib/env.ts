@@ -97,3 +97,32 @@ export function getEmailEnv(): EmailEnv {
   }
   return parsed.data;
 }
+
+/** Liste d'adresses e-mail séparées par des virgules, normalisées en minuscules. */
+const emailList = z
+  .string()
+  .default("")
+  .transform((v) =>
+    v
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter((e) => e.length > 0),
+  );
+
+const accessEnvSchema = z.object({
+  /** invite (défaut) : seules les adresses autorisées peuvent créer un compte. open : inscriptions ouvertes à tous. */
+  SIGNUP_MODE: z.enum(["invite", "open"]).default("invite").catch("invite"),
+  /** Adresses autorisées à s'inscrire en mode invite (les propriétaires le sont toujours). */
+  SIGNUP_ALLOWED_EMAILS: emailList,
+  /** Comptes propriétaires : accès sans limite d'audits par jour, une fois l'adresse confirmée. */
+  OWNER_EMAILS: emailList,
+});
+
+export type AccessEnv = z.infer<typeof accessEnvSchema>;
+
+/** Règles d'accès, relues à chaque appel : un changement de variable s'applique au redémarrage. */
+export function getAccessEnv(): AccessEnv {
+  const raw = { ...process.env };
+  for (const key of Object.keys(accessEnvSchema.shape)) if (raw[key] === "") delete raw[key];
+  return accessEnvSchema.parse(raw);
+}

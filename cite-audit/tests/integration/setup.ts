@@ -3,6 +3,8 @@ import { getTestDatabaseUrl } from "./test-db";
 
 // Doit précéder tout import de "@/lib/db" : le client Prisma lit DATABASE_URL au premier usage.
 process.env.DATABASE_URL = getTestDatabaseUrl();
+// Inscriptions ouvertes par défaut dans les tests ; le mode invitation a ses propres tests.
+process.env.SIGNUP_MODE = "open";
 
 const { prisma } = await import("@/lib/db");
 

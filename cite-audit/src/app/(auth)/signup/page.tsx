@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth/auth-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getAccessEnv } from "@/lib/env";
 import { getCurrentUser } from "@/lib/session";
 import { signUpAction } from "@/server/actions/auth";
 
@@ -10,11 +11,16 @@ export const metadata: Metadata = { title: "Créer un compte" };
 
 export default async function SignupPage() {
   if (await getCurrentUser()) redirect("/dashboard");
+  const inviteOnly = getAccessEnv().SIGNUP_MODE === "invite";
   return (
     <Card>
       <CardHeader>
         <CardTitle>Créer un compte</CardTitle>
-        <CardDescription>Vos projets et vos audits restent privés.</CardDescription>
+        <CardDescription>
+          {inviteOnly
+            ? "Inscription sur invitation : seules les adresses autorisées peuvent créer un compte."
+            : "Vos projets et vos audits restent privés."}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <AuthForm mode="signup" action={signUpAction} />

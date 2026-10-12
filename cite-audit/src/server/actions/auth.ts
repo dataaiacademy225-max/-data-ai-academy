@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { isAPIError } from "better-auth/api";
 import { z } from "zod";
 import { getAuth } from "@/lib/auth";
+import { isSignupAllowed } from "@/lib/access";
 import { clientIp } from "@/lib/client-ip";
 import { logger } from "@/lib/logger";
 import { signInSchema, signUpSchema } from "@/lib/validation/auth";
@@ -67,6 +68,10 @@ export async function signUpAction(_prev: AuthFormState, formData: FormData): Pr
   const parsed = signUpSchema.safeParse(raw);
   if (!parsed.success) {
     return { fieldErrors: z.flattenError(parsed.error).fieldErrors, values };
+  }
+
+  if (!isSignupAllowed(parsed.data.email)) {
+    return { error: "Les inscriptions se font sur invitation pour le moment. Contactez Data & AI Academy pour obtenir un accès.", values };
   }
 
   const requestHeaders = await headers();

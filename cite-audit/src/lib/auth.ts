@@ -1,6 +1,8 @@
 import { betterAuth } from "better-auth";
+import { APIError } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
+import { isSignupAllowed } from "@/lib/access";
 import { getServerEnv } from "@/lib/env";
 import { prisma } from "@/lib/db";
 import { PASSWORD_MIN_LENGTH } from "@/lib/validation/constants";
@@ -53,6 +55,14 @@ function createAuth() {
     },
     // Dernière activité du compte (règle des comptes inactifs) : connexion ou renouvellement de session.
     databaseHooks: {
+      // Inscriptions sur invitation : vérifié ici pour bloquer aussi l'appel direct à /api/auth/sign-up.
+      user: {
+        create: {
+          before: async (user) => {
+            if (!isSignupAllowed(user.email)) throw new APIError("FORBIDDEN", { message: "SIGNUP_CLOSED" });
+          },
+        },
+      },
       session: {
         create: { after: async (session) => markUserActive(session.userId) },
         update: { after: async (session) => markUserActive(session.userId) },
