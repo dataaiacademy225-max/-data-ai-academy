@@ -3,14 +3,18 @@
  * Lancement : `pnpm worker` (dans un second terminal, à côté de `pnpm dev`).
  */
 import "dotenv/config";
+import { getRetentionEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/db";
 import { processAiRun } from "@/server/ai-visibility/process-run";
 import { claimNextAiRun } from "@/server/ai-visibility/queue";
 import { processAudit } from "@/server/jobs/process-audit";
 import { claimNextAudit } from "@/server/jobs/queue";
+import { purgeExpiredData } from "@/server/services/retention";
 
 const POLL_MS = 2_000;
+const PURGE_EVERY_MS = 24 * 60 * 60_000;
+let lastPurgeAt = 0;
 let stopping = false;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -18,6 +22,17 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 async function main() {
   logger.info("worker.started", { pid: process.pid });
   while (!stopping) {
+    // Purge des données expirées : au démarrage, puis une fois par jour.
+    if (Date.now() - lastPurgeAt >= PURGE_EVERY_MS) {
+      lastPurgeAt = Date.now();
+      try {
+        const { sessions, ...rest } = await purgeExpiredData(getRetentionEnv());
+        // « sessions » serait masqué par le journal (nom sensible) : ce n'est qu'un nombre.
+        logger.info("worker.purge_done", { expiredLogins: sessions, ...rest });
+      } catch (error) {
+        logger.error("worker.purge_failed", { error });
+      }
+    }
     let auditId: string | null = null;
     let aiRunId: string | null = null;
     try {
