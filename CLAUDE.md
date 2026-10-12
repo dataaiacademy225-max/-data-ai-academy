@@ -4,7 +4,7 @@ Dépôt de Data & AI Academy :
 - `index.html` (+ `steve-junior.jpg`) : site vitrine statique servi à la racine. Ne pas casser ni réorganiser.
 - `cite-audit/` : SaaS **CITE Audit**. Toutes les commandes ci-dessous se lancent depuis ce dossier.
 
-Conception de référence : `cite-audit/docs/ARCHITECTURE.md`. Installation détaillée : `cite-audit/README.md`.
+Conception de référence : `cite-audit/docs/ARCHITECTURE.md`. Installation détaillée : `cite-audit/README.md`. Tarification et coûts d'API (brouillon non implémenté) : `cite-audit/docs/PRICING.md`.
 
 ## Interdiction absolue : aucune promesse de résultat IA
 
