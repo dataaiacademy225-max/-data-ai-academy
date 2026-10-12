@@ -16,6 +16,8 @@ export const LEGAL_ENTITY = {
   host: "[À COMPLÉTER : nom, adresse et pays de l'hébergeur]",
   emailProvider: "[À COMPLÉTER : prestataire d'envoi d'e-mails et pays]",
   jurisdiction: "[À COMPLÉTER : tribunal compétent, par exemple Abidjan]",
+  /** Obligatoire si l'éditeur n'est pas établi dans l'UE et vise des utilisateurs européens (article 27 du RGPD). */
+  euRepresentative: "[À COMPLÉTER : représentant dans l'Union européenne (article 27 du RGPD), nom et adresse]",
   updatedAt: "12 octobre 2026",
 } as const;
 
@@ -28,6 +30,12 @@ export function hasPlaceholders(entity: Record<string, string> = LEGAL_ENTITY): 
 export type LegalSection = { title: string; paragraphs: string[]; list?: string[] };
 export type LegalPage = { title: string; intro: string; sections: LegalSection[] };
 export type LegalSlug = "mentions-legales" | "confidentialite" | "conditions";
+
+/** Ligne « durée de conservation » d'un historique (audits ou mesures IA). */
+function historyRetention(label: string, days: number, latest: string): string {
+  if (days === 0) return `${label} : gardés tant que le projet et le compte existent, puis supprimés avec eux.`;
+  return `${label} : ${formatRetention(days)} ; ${latest}`;
+}
 
 export function formatRetention(days: number): string {
   if (days === 0) return "sans limite de durée, jusqu'à la suppression du projet ou du compte";
@@ -47,6 +55,7 @@ export function legalPages(params: { auditRetentionDays: number; aiRunRetentionD
           paragraphs: [`${e.companyName}, ${e.legalForm}.`, e.registration, `Siège : ${e.address}.`, `Contact : ${e.contactEmail}.`],
         },
         { title: "Directeur de la publication", paragraphs: [e.publicationDirector] },
+        { title: "Représentant dans l'Union européenne", paragraphs: [e.euRepresentative] },
         { title: "Hébergement", paragraphs: [e.host] },
         {
           title: "Nature du service",
@@ -85,12 +94,21 @@ export function legalPages(params: { auditRetentionDays: number; aiRunRetentionD
           ],
         },
         {
+          title: "Bases légales",
+          paragraphs: ["Chaque traitement repose sur une base prévue par la loi :"],
+          list: [
+            "Exécution du contrat (les conditions d'utilisation) : compte, projets, audits, mesures IA, e-mails de service.",
+            "Intérêt légitime : sécurité du service (limites de tentatives, journaux techniques, prévention des abus).",
+            "Obligation légale : conservation des factures et données comptables, lorsque des services payants seront proposés.",
+          ],
+        },
+        {
           title: "Durées de conservation",
-          paragraphs: ["Une purge automatique s'exécute chaque jour :"],
+          paragraphs: ["Une purge automatique des données expirées s'exécute chaque jour :"],
           list: [
             "Compte et projets : jusqu'à leur suppression par vous (bouton « Supprimer » dans les paramètres du projet ou dans « Mon compte »). La suppression est immédiate et définitive.",
-            `Audits : ${formatRetention(params.auditRetentionDays)} ; le dernier audit de chaque projet est toujours gardé.`,
-            `Mesures de visibilité IA et réponses reçues : ${formatRetention(params.aiRunRetentionDays)} ; la dernière mesure de chaque projet est toujours gardée.`,
+            historyRetention("Audits", params.auditRetentionDays, "le dernier audit de chaque projet est toujours gardé."),
+            historyRetention("Mesures de visibilité IA et réponses reçues", params.aiRunRetentionDays, "la dernière mesure de chaque projet est toujours gardée."),
             "Sessions de connexion : 7 jours au plus. Lien de changement de mot de passe : 1 heure. Lien de confirmation d'adresse : 24 heures.",
             "Compteurs de tentatives : 24 heures au plus.",
           ],
@@ -105,9 +123,11 @@ export function legalPages(params: { auditRetentionDays: number; aiRunRetentionD
           ],
         },
         {
-          title: "Transferts hors de Côte d'Ivoire",
+          title: "Utilisateurs concernés et transferts internationaux",
           paragraphs: [
-            "Certains prestataires peuvent être situés hors de Côte d'Ivoire. Ces transferts sont encadrés conformément à la loi n° 2013-450 relative à la protection des données à caractère personnel et, pour les utilisateurs situés dans l'Union européenne, au RGPD. [À COMPLÉTER : garanties retenues, après choix des prestataires.]",
+            "CITE Audit s'adresse aux entreprises des pays francophones d'Afrique et d'Europe. Les données sont traitées conformément à la loi ivoirienne n° 2013-450 relative à la protection des données à caractère personnel, à la loi applicable dans le pays de l'utilisateur et, pour les utilisateurs situés dans l'Union européenne, au Règlement général sur la protection des données (RGPD).",
+            `Représentant dans l'Union européenne : ${e.euRepresentative}.`,
+            "Certains prestataires peuvent être situés dans un autre pays que le vôtre. Ces transferts sont encadrés par des garanties adaptées (clauses contractuelles types de la Commission européenne ou décision d'adéquation). [À COMPLÉTER : garanties retenues, après choix des prestataires.]",
           ],
         },
         {
@@ -120,7 +140,7 @@ export function legalPages(params: { auditRetentionDays: number; aiRunRetentionD
           title: "Vos droits",
           paragraphs: [
             `Vous pouvez accéder à vos données, les corriger (paramètres du projet), les supprimer (« Mon compte ») ou vous opposer à un traitement en écrivant à ${e.contactEmail}. Réponse sous 30 jours au plus.`,
-            "Vous pouvez saisir l'Autorité de Régulation des Télécommunications/TIC de Côte d'Ivoire (ARTCI) ou, si vous résidez dans l'Union européenne, l'autorité de protection des données de votre pays.",
+            "Vous pouvez aussi saisir l'autorité de protection des données de votre pays : par exemple l'ARTCI en Côte d'Ivoire, la CDP au Sénégal, la CNIL en France, l'APD en Belgique ou le PFPDT en Suisse.",
           ],
         },
         {

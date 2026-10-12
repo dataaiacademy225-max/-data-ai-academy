@@ -50,10 +50,10 @@ export function getAiEnv(): AiEnv {
 }
 
 const retentionEnvSchema = z.object({
-  /** Audits conservés N jours (le plus récent de chaque projet est toujours gardé). 0 = jamais supprimés. */
-  AUDIT_RETENTION_DAYS: z.coerce.number().int().min(0).max(3650).default(730).catch(730),
-  /** Mesures de visibilité IA (réponses brutes comprises) conservées N jours ; la plus récente de chaque projet est gardée. 0 = jamais. */
-  AI_RUN_RETENTION_DAYS: z.coerce.number().int().min(0).max(3650).default(365).catch(365),
+  /** Audits conservés N jours (le plus récent de chaque projet est toujours gardé). 0 (défaut) = gardés tant que le projet existe. */
+  AUDIT_RETENTION_DAYS: z.coerce.number().int().min(0).max(3650).default(0).catch(0),
+  /** Mesures de visibilité IA (réponses brutes comprises) conservées N jours ; la plus récente de chaque projet est gardée. 0 (défaut) = gardées tant que le projet existe. */
+  AI_RUN_RETENTION_DAYS: z.coerce.number().int().min(0).max(3650).default(0).catch(0),
 });
 
 export type RetentionEnv = z.infer<typeof retentionEnvSchema>;

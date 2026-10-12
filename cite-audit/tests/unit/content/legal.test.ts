@@ -14,6 +14,15 @@ describe("pages légales", () => {
     for (const text of allText) expect(findForbiddenWording(text), text).toEqual([]);
   });
 
+  it("couvrent l'Afrique francophone et l'Europe (RGPD, représentant UE, autorités)", () => {
+    const privacy = JSON.stringify(pages.confidentialite);
+    expect(privacy).toContain("RGPD");
+    expect(privacy).toContain("Représentant dans l'Union européenne");
+    expect(privacy).toContain("ARTCI");
+    expect(privacy).toContain("CNIL");
+    expect(privacy).toContain("Bases légales");
+  });
+
   it("rappellent l'absence de garantie et la nature interne du score", () => {
     const conditions = JSON.stringify(pages.conditions);
     expect(conditions).toContain("Résultat non garanti");
@@ -25,6 +34,9 @@ describe("pages légales", () => {
     expect(privacy).toContain("Audits : 2 ans");
     expect(privacy).toContain("réponses reçues : 1 an");
     expect(JSON.stringify(legalPages({ auditRetentionDays: 0, aiRunRetentionDays: 90 }).confidentialite)).toContain("90 jours");
+    const unlimited = JSON.stringify(legalPages({ auditRetentionDays: 0, aiRunRetentionDays: 0 }).confidentialite);
+    expect(unlimited).toContain("Audits : gardés tant que le projet et le compte existent");
+    expect(unlimited).not.toContain("toujours gardé");
   });
 
   it("formate les durées", () => {
