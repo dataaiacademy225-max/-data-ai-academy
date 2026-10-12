@@ -48,6 +48,27 @@ describe("requestAudit", () => {
     expect(await requestAudit(user.id, project.id)).toEqual({ ok: false, error: "ALREADY_RUNNING" });
   });
 
+  it("des demandes simultanées ne créent qu'un seul audit", async () => {
+    const user = await createUser();
+    const project = await createProject(user.id, projectInput());
+    // 20 demandes simultanées : niveau qui reproduisait le doublon avant le verrou.
+    const results = await Promise.all(Array.from({ length: 20 }, () => requestAudit(user.id, project.id)));
+    expect(results.filter((r) => r.ok)).toHaveLength(1);
+    expect(results.filter((r) => !r.ok && r.error === "ALREADY_RUNNING")).toHaveLength(19);
+    expect(await prisma.audit.count({ where: { projectId: project.id } })).toBe(1);
+  });
+
+  it("des demandes simultanées sur plusieurs projets ne dépassent pas le quota quotidien", async () => {
+    const user = await createUser();
+    const projects = await Promise.all(Array.from({ length: 5 }, () => createProject(user.id, projectInput())));
+    await prisma.audit.createMany({
+      data: Array.from({ length: MAX_AUDITS_PER_DAY - 2 }, () => ({ projectId: projects[0].id, status: "SUCCEEDED" as const, scoringVersion: "cite-1.1.0", inputSnapshot: {} })),
+    });
+    const results = await Promise.all(projects.slice(1).map((p) => requestAudit(user.id, p.id)));
+    expect(results.filter((r) => r.ok)).toHaveLength(2);
+    expect(await prisma.audit.count({ where: { project: { userId: user.id } } })).toBe(MAX_AUDITS_PER_DAY);
+  });
+
   it("annule un audit resté en attente trop longtemps (worker absent) et en accepte un nouveau", async () => {
     const user = await createUser();
     const project = await createProject(user.id, projectInput());

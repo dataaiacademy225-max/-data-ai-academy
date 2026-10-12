@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { SCORING_VERSION, type ScoringContext, type ScoringResult } from "@/server/scoring";
+import { lockForTransaction } from "@/server/services/locks";
 
 /** Limite d'audits lancés par utilisateur sur 24 heures (protection contre les abus). */
 export const MAX_AUDITS_PER_DAY = 20;
@@ -17,41 +18,47 @@ export async function requestAudit(
   userId: string,
   projectId: string,
 ): Promise<{ ok: true; auditId: string } | { ok: false; error: LaunchError }> {
-  const project = await prisma.project.findFirst({ where: { id: projectId, userId } });
-  if (!project) return { ok: false, error: "NOT_FOUND" };
-  if (project.isDemo) return { ok: false, error: "DEMO_PROJECT" };
+  // Vérifications et création dans une même transaction, sous verrou par utilisateur :
+  // deux demandes simultanées ne peuvent ni créer deux audits ni dépasser le quota.
+  return prisma.$transaction(async (tx) => {
+    await lockForTransaction(tx, `audit-request:${userId}`);
 
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const recent = await prisma.audit.count({ where: { project: { userId }, queuedAt: { gte: since } } });
-  if (recent >= MAX_AUDITS_PER_DAY) return { ok: false, error: "QUOTA" };
+    const project = await tx.project.findFirst({ where: { id: projectId, userId } });
+    if (!project) return { ok: false as const, error: "NOT_FOUND" as const };
+    if (project.isDemo) return { ok: false as const, error: "DEMO_PROJECT" as const };
 
-  // Un audit resté en attente trop longtemps est annulé pour ne pas bloquer le projet.
-  await prisma.audit.updateMany({
-    where: { projectId, status: "QUEUED", queuedAt: { lt: new Date(Date.now() - QUEUED_STALE_MS) } },
-    data: { status: "CANCELED", finishedAt: new Date(), errorCode: "QUEUE_TIMEOUT" },
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recent = await tx.audit.count({ where: { project: { userId }, queuedAt: { gte: since } } });
+    if (recent >= MAX_AUDITS_PER_DAY) return { ok: false as const, error: "QUOTA" as const };
+
+    // Un audit resté en attente trop longtemps est annulé pour ne pas bloquer le projet.
+    await tx.audit.updateMany({
+      where: { projectId, status: "QUEUED", queuedAt: { lt: new Date(Date.now() - QUEUED_STALE_MS) } },
+      data: { status: "CANCELED", finishedAt: new Date(), errorCode: "QUEUE_TIMEOUT" },
+    });
+    const pending = await tx.audit.findFirst({ where: { projectId, status: { in: ["QUEUED", "RUNNING"] } } });
+    if (pending) return { ok: false as const, error: "ALREADY_RUNNING" as const };
+
+    const context: ScoringContext = {
+      companyName: project.companyName,
+      sector: project.sector,
+      primaryTarget: project.primaryTarget,
+      city: project.city,
+      country: project.country,
+      geoQueries: project.geoQueries,
+    };
+    const audit = await tx.audit.create({
+      data: {
+        projectId,
+        status: "QUEUED",
+        scoringVersion: SCORING_VERSION,
+        progress: { phase: "queued", pagesDone: 0, pagesTotal: 0 },
+        // Copie figée : modifier le projet ensuite ne change pas cet audit.
+        inputSnapshot: { siteUrl: project.siteUrl, ...context, competitors: project.competitors },
+      },
+    });
+    return { ok: true as const, auditId: audit.id };
   });
-  const pending = await prisma.audit.findFirst({ where: { projectId, status: { in: ["QUEUED", "RUNNING"] } } });
-  if (pending) return { ok: false, error: "ALREADY_RUNNING" };
-
-  const context: ScoringContext = {
-    companyName: project.companyName,
-    sector: project.sector,
-    primaryTarget: project.primaryTarget,
-    city: project.city,
-    country: project.country,
-    geoQueries: project.geoQueries,
-  };
-  const audit = await prisma.audit.create({
-    data: {
-      projectId,
-      status: "QUEUED",
-      scoringVersion: SCORING_VERSION,
-      progress: { phase: "queued", pagesDone: 0, pagesTotal: 0 },
-      // Copie figée : modifier le projet ensuite ne change pas cet audit.
-      inputSnapshot: { siteUrl: project.siteUrl, ...context, competitors: project.competitors },
-    },
-  });
-  return { ok: true, auditId: audit.id };
 }
 
 export async function listAudits(userId: string, projectId: string) {

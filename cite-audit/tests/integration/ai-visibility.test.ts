@@ -152,6 +152,14 @@ describe("requestAiRun", () => {
     expect(await queriesUsedToday(user.id)).toBe(0);
   });
 
+  it("des demandes simultanées ne créent qu'une seule mesure", async () => {
+    const user = await createUser();
+    const project = await createProject(user.id, input);
+    const results = await Promise.all(Array.from({ length: 20 }, () => launch(user.id, project.id, ["Q1 x"])));
+    expect(results.filter((r) => r.ok)).toHaveLength(1);
+    expect(await prisma.aiVisibilityRun.count({ where: { projectId: project.id } })).toBe(1);
+  });
+
   it("refuse un modèle non proposé", async () => {
     const user = await createUser();
     const project = await createProject(user.id, input);
