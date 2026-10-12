@@ -1,0 +1,41 @@
+# Blueprint Render : CITE Audit en hébergement gratuit (un seul service web, worker intégré).
+# Base de données : PostgreSQL externe (Neon, offre gratuite) — la base gratuite de Render est supprimée après 30 jours.
+# Les valeurs « sync: false » sont demandées par Render à la création : ne jamais les écrire dans ce fichier.
+services:
+  - type: web
+    name: cite-audit
+    runtime: docker
+    plan: free
+    region: frankfurt
+    branch: Root
+    dockerfilePath: ./cite-audit/Dockerfile
+    dockerContext: ./cite-audit
+    # Migrations puis démarrage (l'offre gratuite n'a pas d'étape « pre-deploy »).
+    dockerCommand: sh -c "pnpm db:deploy && exec node node_modules/next/dist/bin/next start"
+    healthCheckPath: /login
+    buildFilter:
+      paths:
+        - cite-audit/**
+    envVars:
+      - key: DATABASE_URL
+        sync: false # URL Neon « direct » (sans -pooler), avec ?sslmode=require
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      - key: BETTER_AUTH_URL
+        value: https://audit.data-ai-academy.com
+      - key: RUN_WORKER_IN_WEB
+        value: "true"
+      - key: SIGNUP_MODE
+        value: invite
+      - key: OWNER_EMAILS
+        value: admin@data-ai-academy.com
+      - key: SIGNUP_ALLOWED_EMAILS
+        sync: false # vide au départ ; adresses de testeurs séparées par des virgules
+      - key: EMAIL_TRANSPORT
+        value: smtp
+      - key: SMTP_URL
+        sync: false # fourni par le prestataire d'e-mails (Brevo…)
+      - key: EMAIL_FROM
+        value: CITE Audit <no-reply@data-ai-academy.com>
+      - key: TRUSTED_PROXY_COUNT
+        value: "1"

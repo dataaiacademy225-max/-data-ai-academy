@@ -60,12 +60,12 @@ Migrations : `prisma migrate dev` refuse de tourner en non-interactif dès qu'il
 | `app/api/auth/[...all]` | Point d'entrée Better Auth. |
 | `proxy.ts` | Redirection rapide sans cookie (pas le contrôle d'accès) et CSP avec nonce par requête (`lib/csp.ts`). |
 | `components/ui`, `components/report`, `components/ai-visibility` | Interface. Aucune logique métier. |
-| `lib/` | `env.ts` (variables validées), `db.ts`, `auth.ts`, `session.ts` (`requireUser`), `logger.ts`, `csp.ts`, `client-ip.ts`, `ai-pricing.ts`, `validation/`. |
+| `lib/` | `env.ts` (variables validées), `db.ts`, `auth.ts`, `session.ts` (`requireUser`), `access.ts` (inscriptions sur invitation, propriétaires), `logger.ts`, `csp.ts`, `client-ip.ts`, `ai-pricing.ts`, `validation/`. |
 | `server/actions/` | Server actions : `requireUser()`, validation Zod, appel d'un service. |
 | `server/services/` | Accès aux données, toujours filtré par `userId`. Suppression de projet ou de compte : en cascade en base (`projects.ts`, `account.ts`). Verrous de requête : `locks.ts`. |
 | `server/crawler/` | Collecte : `url-guard` → `robots` → `safe-fetch` → `extract` (`analyzeUrl`), puis `sitemap` + `discover` → `crawl-site`. Ni score ni UI. |
 | `server/scoring/` | Moteur CITE **pur** : `scoreSite(input)`. Barème et textes dans `catalog.ts`, une règle par critère dans `criteria/`. |
-| `server/jobs/`, `worker/` | File d'attente des audits (`queue.ts`), traitement (`process-audit.ts`), boucle du worker. |
+| `server/jobs/`, `worker/` | File d'attente des audits (`queue.ts`), traitement (`process-audit.ts`), boucle du worker (`loop.ts`), lancée par `pnpm worker` ou dans le serveur web si `RUN_WORKER_IN_WEB=true` (`instrumentation.ts`, hébergement gratuit Render + Neon, `render.yaml`). |
 | `server/ai-visibility/` | Module facultatif : `types.ts` (AiProvider), `providers/`, `analyze.ts` (pur), `queue.ts`, `process-run.ts`. |
 | `server/demo/` | Données de démonstration. |
 | `server/email/` | Gabarits (purs) et envoi : `EMAIL_TRANSPORT` = console (dev), smtp, memory (tests). |

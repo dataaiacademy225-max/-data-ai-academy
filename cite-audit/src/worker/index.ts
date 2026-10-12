@@ -1,78 +1,14 @@
 /**
  * Worker CITE Audit : processus séparé de l'application web.
  * Lancement : `pnpm worker` (dans un second terminal, à côté de `pnpm dev`).
+ * En hébergement gratuit, la même boucle tourne dans l'application web (RUN_WORKER_IN_WEB, voir src/instrumentation.ts).
  */
 import "dotenv/config";
-import { getRetentionEnv, getServerEnv } from "@/lib/env";
-import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/db";
-import { processAiRun } from "@/server/ai-visibility/process-run";
-import { claimNextAiRun } from "@/server/ai-visibility/queue";
-import { processAudit } from "@/server/jobs/process-audit";
-import { claimNextAudit } from "@/server/jobs/queue";
-import { sendEmail } from "@/server/email/send";
-import { processInactiveAccounts } from "@/server/services/inactive-accounts";
-import { purgeExpiredData } from "@/server/services/retention";
+import { logger } from "@/lib/logger";
+import { runWorkerLoop } from "@/worker/loop";
 
-const POLL_MS = 2_000;
-const PURGE_EVERY_MS = 24 * 60 * 60_000;
-let lastPurgeAt = 0;
 let stopping = false;
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-async function main() {
-  logger.info("worker.started", { pid: process.pid });
-  while (!stopping) {
-    // Purge des données expirées : au démarrage, puis une fois par jour.
-    if (Date.now() - lastPurgeAt >= PURGE_EVERY_MS) {
-      lastPurgeAt = Date.now();
-      try {
-        const { sessions, ...rest } = await purgeExpiredData(getRetentionEnv());
-        // « sessions » serait masqué par le journal (nom sensible) : ce n'est qu'un nombre.
-        logger.info("worker.purge_done", { expiredLogins: sessions, ...rest });
-      } catch (error) {
-        logger.error("worker.purge_failed", { error });
-      }
-      try {
-        const retention = getRetentionEnv();
-        const inactive = await processInactiveAccounts(
-          { inactiveDays: retention.INACTIVE_ACCOUNT_DAYS, graceDays: retention.INACTIVE_ACCOUNT_GRACE_DAYS },
-          { sendEmail, appUrl: getServerEnv().BETTER_AUTH_URL },
-        );
-        logger.info("worker.inactive_accounts_done", inactive);
-      } catch (error) {
-        logger.error("worker.inactive_accounts_failed", { error });
-      }
-    }
-    let auditId: string | null = null;
-    let aiRunId: string | null = null;
-    try {
-      // Les audits de site passent en priorité ; puis les mesures de visibilité IA.
-      auditId = await claimNextAudit();
-      if (!auditId) aiRunId = await claimNextAiRun();
-    } catch (error) {
-      logger.error("worker.claim_failed", { error });
-    }
-    // Chaque travail est isolé : une erreur imprévue est journalisée sans arrêter le worker.
-    try {
-      if (auditId) {
-        logger.info("worker.audit_started", { auditId });
-        await processAudit(auditId);
-      } else if (aiRunId) {
-        logger.info("worker.ai_run_started", { runId: aiRunId });
-        await processAiRun(aiRunId);
-      } else {
-        await sleep(POLL_MS);
-      }
-    } catch (error) {
-      logger.error("worker.job_failed", { auditId, runId: aiRunId, error });
-      await sleep(POLL_MS);
-    }
-  }
-  await prisma.$disconnect();
-  logger.info("worker.stopped", {});
-}
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
@@ -80,6 +16,13 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
     logger.info("worker.stopping", { signal });
     stopping = true;
   });
+}
+
+async function main() {
+  logger.info("worker.started", { pid: process.pid });
+  await runWorkerLoop(() => stopping);
+  await prisma.$disconnect();
+  logger.info("worker.stopped", {});
 }
 
 main().catch((error) => {
