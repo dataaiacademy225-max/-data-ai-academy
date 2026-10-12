@@ -37,7 +37,7 @@ export async function processAiRun(runId: string, deps: RunDeps = {}): Promise<v
   if (!run || run.isDemo || run.status !== "RUNNING") return;
 
   const fail = (errorCode: string) =>
-    prisma.aiVisibilityRun.update({ where: { id: runId }, data: { status: "FAILED", finishedAt: new Date(), errorCode } });
+    prisma.aiVisibilityRun.updateMany({ where: { id: runId }, data: { status: "FAILED", finishedAt: new Date(), errorCode } });
 
   const snapshot = readSnapshot(run.inputSnapshot);
   if (!snapshot) return void (await fail("INVALID_INPUT"));
@@ -128,13 +128,18 @@ export async function processAiRun(runId: string, deps: RunDeps = {}): Promise<v
       await reportAiProgress(runId, { done, total: run.queryCount });
     }
   } catch (error) {
+    if (!(await prisma.aiVisibilityRun.count({ where: { id: runId } }))) {
+      logger.info("ai.run_deleted_during_processing", { runId });
+      return;
+    }
     if (!(error instanceof AiProviderError)) logger.error("ai.run_crashed", { runId, error });
   }
 
   const results = await prisma.aiQueryResult.findMany({ where: { runId }, select: { status: true, costUsd: true } });
   const ok = results.filter((r) => r.status === "SUCCEEDED").length;
   const costs = results.map((r) => r.costUsd).filter((c): c is number => c !== null);
-  await prisma.aiVisibilityRun.update({
+  // updateMany : sans erreur si le projet a été supprimé pendant la mesure.
+  await prisma.aiVisibilityRun.updateMany({
     where: { id: runId },
     data: {
       status: ok === results.length ? "SUCCEEDED" : ok > 0 ? "PARTIAL" : "FAILED",

@@ -27,13 +27,19 @@ async function main() {
     } catch (error) {
       logger.error("worker.claim_failed", { error });
     }
-    if (auditId) {
-      logger.info("worker.audit_started", { auditId });
-      await processAudit(auditId);
-    } else if (aiRunId) {
-      logger.info("worker.ai_run_started", { runId: aiRunId });
-      await processAiRun(aiRunId);
-    } else {
+    // Chaque travail est isolé : une erreur imprévue est journalisée sans arrêter le worker.
+    try {
+      if (auditId) {
+        logger.info("worker.audit_started", { auditId });
+        await processAudit(auditId);
+      } else if (aiRunId) {
+        logger.info("worker.ai_run_started", { runId: aiRunId });
+        await processAiRun(aiRunId);
+      } else {
+        await sleep(POLL_MS);
+      }
+    } catch (error) {
+      logger.error("worker.job_failed", { auditId, runId: aiRunId, error });
       await sleep(POLL_MS);
     }
   }

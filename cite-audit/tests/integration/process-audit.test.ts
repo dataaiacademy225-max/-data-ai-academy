@@ -85,6 +85,20 @@ describe("processAudit", () => {
     expect(await prisma.audit.findUniqueOrThrow({ where: { id: auditId } })).toMatchObject({ status: "FAILED", errorCode: "INTERNAL", scoreTotal: null });
   });
 
+  it("projet supprimé pendant l'analyse : aucune exception (le worker continue)", async () => {
+    const auditId = await claimedAudit();
+    const audit = await prisma.audit.findUniqueOrThrow({ where: { id: auditId } });
+    await expect(
+      processAudit(auditId, {
+        crawl: async () => {
+          await prisma.project.delete({ where: { id: audit.projectId } });
+          return fakeCrawl;
+        },
+      }),
+    ).resolves.toBeUndefined();
+    expect(await prisma.audit.count({ where: { id: auditId } })).toBe(0);
+  });
+
   it("ignore un audit qui n'est pas en cours (déjà traité ou annulé)", async () => {
     const auditId = await claimedAudit();
     await prisma.audit.update({ where: { id: auditId }, data: { status: "CANCELED" } });

@@ -248,6 +248,19 @@ describe("processAiRun", () => {
     expect(await prisma.aiVisibilityRun.findUniqueOrThrow({ where: { id: runId } })).toMatchObject({ status: "SUCCEEDED", attempts: 2 });
   });
 
+  it("projet supprimé pendant la mesure : aucune exception (le worker continue)", async () => {
+    const runId = await claimedRun(["Q1 test", "Q2 test"]);
+    const run = await prisma.aiVisibilityRun.findUniqueOrThrow({ where: { id: runId } });
+    const provider = fakeProvider([answer("a"), answer("b")]);
+    const ask = provider.ask.bind(provider);
+    provider.ask = async (q, o) => {
+      await prisma.project.delete({ where: { id: run.projectId } });
+      return ask(q, o);
+    };
+    await expect(processAiRun(runId, { provider, clock: clock(), minIntervalMs: 0 })).resolves.toBeUndefined();
+    expect(await prisma.aiVisibilityRun.count({ where: { id: runId } })).toBe(0);
+  });
+
   it("espace les appels selon l'intervalle minimal", async () => {
     const runId = await claimedRun(["Q1 test", "Q2 test", "Q3 test"]);
     const c = clock();

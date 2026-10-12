@@ -67,7 +67,12 @@ export async function processAudit(auditId: string, deps: ProcessDeps = {}): Pro
     });
     logger.info("audit.processed", { auditId, pages: crawl.pages.length, score: result.scoreTotal });
   } catch (error) {
-    logger.error("audit.process_failed", { auditId, error });
-    await prisma.audit.update({ where: { id: auditId }, data: { status: "FAILED", finishedAt: new Date(), errorCode: "INTERNAL" } });
+    // updateMany : ne lève pas d'erreur si le projet (et donc l'audit) a été supprimé entre-temps.
+    const { count } = await prisma.audit.updateMany({
+      where: { id: auditId },
+      data: { status: "FAILED", finishedAt: new Date(), errorCode: "INTERNAL" },
+    });
+    if (count === 0) logger.info("audit.deleted_during_processing", { auditId });
+    else logger.error("audit.process_failed", { auditId, error });
   }
 }
