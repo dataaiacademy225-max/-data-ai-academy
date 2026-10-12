@@ -55,13 +55,13 @@ Migrations : `prisma migrate dev` refuse de tourner en non-interactif dès qu'il
 
 | Chemin | Rôle |
 |---|---|
-| `app/(auth)`, `app/(app)` | Pages publiques (connexion, inscription) et protégées (tableau de bord, projets, rapport, visibilité IA). |
+| `app/(auth)`, `app/(app)` | Pages publiques (connexion, inscription) et protégées (tableau de bord, projets et leurs paramètres, rapport, visibilité IA, `settings/account`). |
 | `app/api/auth/[...all]` | Point d'entrée Better Auth. |
 | `proxy.ts` | Redirection rapide sans cookie. Ce n'est **pas** le contrôle d'accès. |
 | `components/ui`, `components/report`, `components/ai-visibility` | Interface. Aucune logique métier. |
 | `lib/` | `env.ts` (variables validées), `db.ts`, `auth.ts`, `session.ts` (`requireUser`), `logger.ts`, `ai-pricing.ts`, `validation/`. |
 | `server/actions/` | Server actions : `requireUser()`, validation Zod, appel d'un service. |
-| `server/services/` | Accès aux données, toujours filtré par `userId`. |
+| `server/services/` | Accès aux données, toujours filtré par `userId`. Suppression de projet ou de compte : en cascade en base (`projects.ts`, `account.ts`). Verrous de requête : `locks.ts`. |
 | `server/crawler/` | Collecte : `url-guard` → `robots` → `safe-fetch` → `extract` (`analyzeUrl`), puis `sitemap` + `discover` → `crawl-site`. Ni score ni UI. |
 | `server/scoring/` | Moteur CITE **pur** : `scoreSite(input)`. Barème et textes dans `catalog.ts`, une règle par critère dans `criteria/`. |
 | `server/jobs/`, `worker/` | File d'attente des audits (`queue.ts`), traitement (`process-audit.ts`), boucle du worker. |

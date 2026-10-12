@@ -10,7 +10,8 @@ Conception complète : [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 - Inscription, connexion, déconnexion (Better Auth, sessions en base).
 - Tableau de bord (vide ou liste des projets).
-- Création de projet avec validation client et serveur (Zod).
+- Création, modification et suppression de projet avec validation client et serveur (Zod). La suppression exige de retaper le nom de l'entreprise et efface en cascade audits, pages, recommandations et mesures IA.
+- Page « Mon compte » : suppression définitive du compte et de toutes ses données (mot de passe + mot SUPPRIMER).
 - Modèles : `User`, `Project`, `Audit`, `PageAnalysis`, `Finding`, `AiQueryResult` (+ tables d'authentification).
 - Données de démonstration isolées (compte `demo@example.com`, projets et audits `isDemo`).
 
@@ -32,6 +33,7 @@ Renseigner dans `.env` du serveur (jamais côté navigateur) puis redémarrer l'
 ```bash
 PERPLEXITY_API_KEY="pplx-…"
 PERPLEXITY_API_MODE="agent"   # Agent API /v1/responses (par défaut) ; "chat" = ancien format
+# PERPLEXITY_BASE_URL="https://api.perplexity.ai"  # facultatif, https uniquement (proxy ou test)
 AI_MAX_QUERIES_PER_RUN=10     # requêtes par lancement (20 max)
 AI_MAX_QUERIES_PER_DAY=50     # requêtes par utilisateur sur 24 h
 AI_MIN_INTERVAL_MS=1500       # délai minimal entre deux appels

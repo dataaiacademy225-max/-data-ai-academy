@@ -1,6 +1,6 @@
 # CITE Audit — Dossier de conception (v0.1)
 
-> Statut : **validé**. Étape 1 (socle) en place. Le schéma de référence est `prisma/schema.prisma` ; la §3.2 ci-dessous est la proposition initiale.
+> Statut : **validé**. Étape 1 (socle) en place. Modification et suppression de projet, suppression de compte (§4.1) en place depuis octobre 2026. Le schéma de référence est `prisma/schema.prisma` ; la §3.2 ci-dessous est la proposition initiale.
 >
 > Écarts retenus à l'étape 1 : modèles nommés `PageAnalysis` et `AiQueryResult` ; concurrents (`competitors`, JSON) et requêtes GEO (`geoQueries`, tableau) stockés sur `Project` plutôt qu'en tables séparées ; `isDemo` sur `Project` et `Audit` (clé étrangère composite) pour isoler les données de démonstration ; `CriterionResult` et `ApiCredential` arriveront aux étapes 3 et 5 ; `cacheComponents` de Next.js 16 désactivé (rendu dynamique classique, plus simple pour des pages authentifiées).
 >
