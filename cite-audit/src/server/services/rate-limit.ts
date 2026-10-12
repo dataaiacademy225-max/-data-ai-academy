@@ -16,6 +16,9 @@ export const LIMITS = {
   signInPerIp: { max: 50, windowMs: 15 * 60_000 },
   signUpPerIp: { max: 10, windowMs: 60 * 60_000 },
   deleteAccountPerUser: { max: 5, windowMs: 15 * 60_000 },
+  passwordResetPerIp: { max: 10, windowMs: 60 * 60_000 },
+  passwordResetPerEmail: { max: 3, windowMs: 60 * 60_000 },
+  verificationEmailPerUser: { max: 3, windowMs: 60 * 60_000 },
 } as const satisfies Record<string, LimitRule>;
 
 /** Empreinte de la clé : aucune donnée personnelle (e-mail, IP) n'est stockée en clair. */

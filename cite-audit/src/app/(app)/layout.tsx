@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/session";
 import { signOutAction } from "@/server/actions/auth";
+import { resendVerificationEmailAction } from "@/server/actions/password";
+import { VerifyEmailBanner } from "@/components/auth/verify-email-banner";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const user = await requireUser();
@@ -26,6 +28,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
+      {!user.emailVerified && <VerifyEmailBanner action={resendVerificationEmailAction} />}
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
       <footer className="border-t border-border py-4 text-center text-xs text-muted-foreground">
         Le score CITE est un indicateur interne Data &amp; AI Academy, basé sur des signaux observables. Ce

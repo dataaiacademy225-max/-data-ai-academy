@@ -78,7 +78,7 @@ export async function signUpAction(_prev: AuthFormState, formData: FormData): Pr
 
   try {
     const { name, email, password } = parsed.data;
-    await getAuth().api.signUpEmail({ body: { name, email, password }, headers: requestHeaders });
+    await getAuth().api.signUpEmail({ body: { name, email, password, callbackURL: "/dashboard" }, headers: requestHeaders });
   } catch (error) {
     if (isAPIError(error)) {
       return { error: "Impossible de créer un compte avec cette adresse e-mail.", values };

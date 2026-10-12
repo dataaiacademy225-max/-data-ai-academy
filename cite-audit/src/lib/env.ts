@@ -64,3 +64,32 @@ export function getRetentionEnv(): RetentionEnv {
   for (const key of Object.keys(retentionEnvSchema.shape)) if (raw[key] === "") delete raw[key];
   return retentionEnvSchema.parse(raw);
 }
+
+const emailEnvSchema = z.object({
+  /**
+   * console : e-mails affichés dans le terminal (développement uniquement, refusé en production) ;
+   * smtp : envoi réel via SMTP_URL (Brevo, Resend, Mailjet, OVH… proposent tous un accès SMTP) ;
+   * memory : boîte d'envoi en mémoire, réservée aux tests automatiques.
+   */
+  EMAIL_TRANSPORT: z.enum(["console", "smtp", "memory"]).default("console"),
+  /** smtps://utilisateur:motdepasse@smtp.exemple.com:465 (secret : variable d'environnement uniquement). */
+  SMTP_URL: z.url().refine((u) => /^smtps?:\/\//.test(u), "SMTP_URL doit commencer par smtp:// ou smtps://").optional(),
+  EMAIL_FROM: z.string().min(3).max(200).default("CITE Audit <no-reply@localhost>"),
+});
+
+export type EmailEnv = z.infer<typeof emailEnvSchema>;
+
+/** Configuration de l'envoi d'e-mails. Les erreurs ne citent que le nom des variables, jamais leur valeur. */
+export function getEmailEnv(): EmailEnv {
+  const raw = { ...process.env };
+  for (const key of Object.keys(emailEnvSchema.shape)) if (raw[key] === "") delete raw[key];
+  const parsed = emailEnvSchema.safeParse(raw);
+  if (!parsed.success) {
+    const fields = parsed.error.issues.map((i) => i.path.join(".")).join(", ");
+    throw new Error(`Configuration e-mail invalide : ${fields}. Voir .env.example.`);
+  }
+  if (parsed.data.EMAIL_TRANSPORT === "smtp" && !parsed.data.SMTP_URL) {
+    throw new Error("Configuration e-mail invalide : SMTP_URL est requise avec EMAIL_TRANSPORT=smtp.");
+  }
+  return parsed.data;
+}
