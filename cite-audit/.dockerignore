@@ -1,0 +1,12 @@
+# Jamais dans l'image : secrets, dépendances locales, builds, tests et historique.
+.env
+.env.*
+!.env.example
+node_modules
+.next
+src/generated
+coverage
+*.tsbuildinfo
+.git
+Dockerfile
+docker-compose*.yml
