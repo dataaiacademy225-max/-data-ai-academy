@@ -1,6 +1,6 @@
 import "dotenv/config";
-import { getAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { signUpDemoUser } from "@/server/demo/demo-sign-up";
 import { DEMO_EMAIL, seedDemo } from "@/server/demo/seed-demo";
 
 async function main() {
@@ -12,14 +12,7 @@ async function main() {
     throw new Error("Définissez DEMO_PASSWORD (10 caractères minimum) dans .env.");
   }
 
-  await seedDemo(
-    prisma,
-    async (body) => {
-      const res = await getAuth().api.signUpEmail({ body });
-      return { userId: res.user.id };
-    },
-    password,
-  );
+  await seedDemo(prisma, signUpDemoUser, password);
   console.log(`Données de démonstration créées. Connexion : ${DEMO_EMAIL} (mot de passe : DEMO_PASSWORD).`);
 }
 

@@ -56,4 +56,20 @@ describe("seed de démonstration", () => {
     await expect(seedDemo(prisma, fakeSignUp, "mot-de-passe-demo")).rejects.toThrow(/projets réels/);
     expect(await prisma.project.count({ where: { userId: demoUser.id } })).toBe(1);
   });
+
+  it("crée le compte démo par Better Auth même quand les inscriptions sont sur invitation", async () => {
+    const { vi } = await import("vitest");
+    const { signUpDemoUser } = await import("@/server/demo/demo-sign-up");
+    vi.stubEnv("SIGNUP_MODE", "invite");
+    vi.stubEnv("SIGNUP_ALLOWED_EMAILS", "testeur@exemple-test.com");
+    vi.stubEnv("EMAIL_TRANSPORT", "memory");
+    try {
+      await seedDemo(prisma, signUpDemoUser, "mot-de-passe-demo");
+      expect(await prisma.user.count({ where: { email: DEMO_EMAIL } })).toBe(1);
+      // L'autorisation exceptionnelle ne survit pas à l'appel.
+      expect(process.env.SIGNUP_ALLOWED_EMAILS).toBe("testeur@exemple-test.com");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
 });
