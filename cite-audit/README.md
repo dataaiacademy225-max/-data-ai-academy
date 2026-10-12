@@ -24,6 +24,12 @@ Conception complète : [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 - Module facultatif de **visibilité IA** (`src/server/ai-visibility`) : interface `AiProvider` (Perplexity aujourd'hui), requêtes de prospects envoyées telles quelles, réponse brute et JSON complet conservés sans modification, sources renvoyées, distinction **mention / citation / recommandation**, concurrents détectés, statut et erreurs par requête. File d'attente traitée par le worker, reprise après arrêt sans renvoyer les requêtes déjà répondues, gestion du « rate limit » (429, Retry-After, 3 essais), espacement des appels, journalisation, limites par lancement et par 24 h, estimation du coût à accepter avant tout envoi.
 
+- Sécurité : limites de tentatives en base (connexion, inscription, mot de passe oublié, suppression de compte), CSP avec nonce, HSTS.
+- E-mails : confirmation d'adresse et mot de passe oublié (SMTP, ou affichage dans le terminal en développement).
+- Purge quotidienne des données expirées par le worker (durées réglables).
+- Pages légales en **brouillon** (`src/content/legal.ts`, champs `[À COMPLÉTER]`, validation par un juriste requise).
+- `Dockerfile`, `docker-compose.prod.yml` et CI GitHub Actions (`.github/workflows/cite-audit-ci.yml`).
+
 Pas encore : vitesse (PageSpeed), indice GEO, plans à 30/90 jours, export PDF serveur, clés API propres à chaque client.
 
 ### Activer la visibilité IA
@@ -71,6 +77,15 @@ CREATE ROLE cite WITH LOGIN PASSWORD 'cite' CREATEDB;
 CREATE DATABASE cite_audit OWNER cite;
 CREATE DATABASE cite_audit_test OWNER cite;
 ```
+
+## Déploiement (Docker)
+
+```bash
+cp .env.example .env.production   # remplir : secrets forts, BETTER_AUTH_URL en https, POSTGRES_PASSWORD, EMAIL_TRANSPORT=smtp + SMTP_URL
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+```
+
+Le fichier lance PostgreSQL (sans port public), les migrations, l'application (127.0.0.1:3000) et le worker. Placer devant un proxy inverse HTTPS (Caddy, Nginx ou celui de l'hébergeur) qui **remplace** les en-têtes `X-Forwarded-For`, `X-Real-IP` et `X-Forwarded-Proto` : les limites de tentatives s'y fient. Sauvegarder le volume `pgdata` régulièrement.
 
 ## Commandes
 

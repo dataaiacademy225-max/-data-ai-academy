@@ -57,9 +57,9 @@ Migrations : `prisma migrate dev` refuse de tourner en non-interactif dès qu'il
 |---|---|
 | `app/(auth)`, `app/(app)` | Pages publiques (connexion, inscription) et protégées (tableau de bord, projets et leurs paramètres, rapport, visibilité IA, `settings/account`). |
 | `app/api/auth/[...all]` | Point d'entrée Better Auth. |
-| `proxy.ts` | Redirection rapide sans cookie. Ce n'est **pas** le contrôle d'accès. |
+| `proxy.ts` | Redirection rapide sans cookie (pas le contrôle d'accès) et CSP avec nonce par requête (`lib/csp.ts`). |
 | `components/ui`, `components/report`, `components/ai-visibility` | Interface. Aucune logique métier. |
-| `lib/` | `env.ts` (variables validées), `db.ts`, `auth.ts`, `session.ts` (`requireUser`), `logger.ts`, `ai-pricing.ts`, `validation/`. |
+| `lib/` | `env.ts` (variables validées), `db.ts`, `auth.ts`, `session.ts` (`requireUser`), `logger.ts`, `csp.ts`, `client-ip.ts`, `ai-pricing.ts`, `validation/`. |
 | `server/actions/` | Server actions : `requireUser()`, validation Zod, appel d'un service. |
 | `server/services/` | Accès aux données, toujours filtré par `userId`. Suppression de projet ou de compte : en cascade en base (`projects.ts`, `account.ts`). Verrous de requête : `locks.ts`. |
 | `server/crawler/` | Collecte : `url-guard` → `robots` → `safe-fetch` → `extract` (`analyzeUrl`), puis `sitemap` + `discover` → `crawl-site`. Ni score ni UI. |
@@ -67,6 +67,8 @@ Migrations : `prisma migrate dev` refuse de tourner en non-interactif dès qu'il
 | `server/jobs/`, `worker/` | File d'attente des audits (`queue.ts`), traitement (`process-audit.ts`), boucle du worker. |
 | `server/ai-visibility/` | Module facultatif : `types.ts` (AiProvider), `providers/`, `analyze.ts` (pur), `queue.ts`, `process-run.ts`. |
 | `server/demo/` | Données de démonstration. |
+| `server/email/` | Gabarits (purs) et envoi : `EMAIL_TRANSPORT` = console (dev), smtp, memory (tests). |
+| `content/legal.ts`, `app/(legal)` | Pages légales (brouillon) ; coordonnées de l'éditeur à compléter dans `LEGAL_ENTITY`. |
 | `generated/prisma` | Généré : ne jamais éditer ni committer. |
 
 Tests (`cite-audit/tests`) : `unit/` (pur, crawler sur serveur local), `integration/` (base de test), `helpers/test-site.ts` (faux site + politique réseau de test), `helpers/scoring-fixtures.ts`, `fixtures/`.
@@ -102,7 +104,10 @@ Tests (`cite-audit/tests`) : `unit/` (pur, crawler sur serveur local), `integrat
 - **Limites anti-abus** :
   - audits : 20 par utilisateur sur 24 h, un seul en cours par projet ;
   - IA : `AI_MAX_QUERIES_PER_RUN` et `AI_MAX_QUERIES_PER_DAY` ;
-  - crawl : 15 pages, 0,5 s entre deux pages, 2 min 30 au plus.
+  - crawl : 15 pages, 0,5 s entre deux pages, 2 min 30 au plus ;
+  - tentatives (connexion, inscription, mot de passe oublié, suppression de compte) : `services/rate-limit.ts`, en base, clés hachées. Les server actions appellent Better Auth directement et contournent sa propre limite HTTP : toute nouvelle action sensible doit appeler `consumeLimit`.
+- **En-têtes** : CSP stricte avec nonce (aucun script en ligne ni `eval` en production), HSTS, `frame-ancestors 'none'`. Ne pas ajouter de ressource externe sans adapter `lib/csp.ts`.
+- **Conservation** : purge quotidienne par le worker (`services/retention.ts`, `AUDIT_RETENTION_DAYS`, `AI_RUN_RETENTION_DAYS`). Toute nouvelle donnée stockée doit avoir une durée et figurer dans `content/legal.ts`.
 - **Tests** : jamais d'accès Internet. Crawler via `tests/helpers/test-site.ts`, fournisseur IA simulé, horloge simulée.
 
 ## Règles de scoring CITE
