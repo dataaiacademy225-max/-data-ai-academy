@@ -66,7 +66,7 @@ export const I2: Rule = (view) => {
 
 export const I3: Rule = (view) => {
   const sitemap = view.input.site.sitemap;
-  if (!sitemap) return notVerified("Non vérifié : le plan du site (sitemap.xml) n'est pas encore analysé dans cette version.");
+  if (!sitemap) return notVerified("Non vérifié : le plan du site n'a pas pu être vérifié lors de cet audit.");
   if (!sitemap.found) return fail("Aucun plan du site (sitemap.xml) n'a été trouvé.", ["Un fichier sitemap.xml"]);
   if (!sitemap.validXml || sitemap.urlCount === 0) return partial(0.5, "Un plan du site existe mais il est invalide ou vide.", ["Un sitemap.xml valide listant vos pages"]);
   return pass(`Un plan du site valide liste ${sitemap.urlCount} adresses.`);

@@ -65,6 +65,7 @@ Migrations : `prisma migrate dev` refuse de tourner en non-interactif dès qu'il
 | `server/services/` | Accès aux données, toujours filtré par `userId`. Suppression de projet ou de compte : en cascade en base (`projects.ts`, `account.ts`). Verrous de requête : `locks.ts`. |
 | `server/crawler/` | Collecte : `url-guard` → `robots` → `safe-fetch` → `extract` (`analyzeUrl`), puis `sitemap` + `discover` → `crawl-site`. Ni score ni UI. |
 | `server/scoring/` | Moteur CITE **pur** : `scoreSite(input)`. Barème et textes dans `catalog.ts`, une règle par critère dans `criteria/`. |
+| `server/report/view.ts` | Présentation du rapport (pure) : diagnostic, deux questions (être trouvé / convertir), ordre des priorités, responsable de chaque action, « ce que le rapport ne mesure pas ». Ne change jamais le score. |
 | `server/jobs/`, `worker/` | File d'attente des audits (`queue.ts`), traitement (`process-audit.ts`), boucle du worker (`loop.ts`), lancée par `pnpm worker` ou dans le serveur web si `RUN_WORKER_IN_WEB=true` (`instrumentation.ts`, hébergement gratuit Render + Neon, `render.yaml`). |
 | `server/ai-visibility/` | Module facultatif : `types.ts` (AiProvider), `providers/`, `analyze.ts` (pur), `queue.ts`, `process-run.ts`. |
 | `server/demo/` | Données de démonstration. |

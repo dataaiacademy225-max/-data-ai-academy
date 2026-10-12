@@ -6,20 +6,16 @@ import { PillarSection } from "@/components/report/pillar-section";
 import { PrintButton } from "@/components/report/print-button";
 import { RecommendationCard } from "@/components/report/recommendation-card";
 import { PillarMeter, ScoreHero } from "@/components/report/score-summary";
-import { PriorityBadge } from "@/components/report/labels";
+import { EFFORT_LABEL, PriorityBadge } from "@/components/report/labels";
 import { Badge } from "@/components/ui/badge";
 import { requireUser } from "@/lib/session";
-import type { PageRole, Pillar, Priority } from "@/server/scoring/types";
+import type { PageRole, Pillar } from "@/server/scoring/types";
+import { buildReportView, metaFor, OWNER_LABEL } from "@/server/report/view";
 import { getAuditReport } from "@/server/services/audits";
 
 export const metadata: Metadata = { title: "Rapport d'audit" };
 
 const PILLAR_ORDER: Pillar[] = ["CLARIFIER", "INDEXER", "TUNNEL", "ENCLENCHER"];
-const PRIORITY_SECTIONS: { priority: Priority; title: string; intro: string }[] = [
-  { priority: "CRITIQUE", title: "À traiter en premier", intro: "Ces points peuvent empêcher d'être trouvé, compris ou contacté." },
-  { priority: "IMPORTANT", title: "Ensuite", intro: "Ces points réduisent nettement la compréhension ou la conversion." },
-  { priority: "RECOMMANDE", title: "Pour aller plus loin", intro: "Des optimisations utiles mais non bloquantes." },
-];
 const ROLE_LABEL: Record<PageRole, string> = {
   home: "Accueil",
   offer: "Offre",
@@ -30,6 +26,7 @@ const ROLE_LABEL: Record<PageRole, string> = {
   blog: "Article",
   other: "Autre page",
 };
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 const dateTime = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" });
 
 export default async function AuditReportPage({ params }: { params: Promise<{ projectId: string; auditId: string }> }) {
@@ -41,6 +38,7 @@ export default async function AuditReportPage({ params }: { params: Promise<{ pr
   const nothingMeasured = report?.coverage === 0;
   const skipped = Number((audit.progress as { skipped?: number } | null)?.skipped ?? 0);
   const NOTHING = "Rien n'a pu être mesuré : voir la section « Limites ».";
+  const view = report ? buildReportView(report) : null;
 
   return (
     <article className="space-y-10 print:space-y-6">
@@ -71,11 +69,25 @@ export default async function AuditReportPage({ params }: { params: Promise<{ pr
         </p>
       ) : (
         <>
-          {/* 1. Synthèse exécutive : lisible en moins d'une minute */}
+          {/* 1. Synthèse : le diagnostic d'abord, puis les priorités par question */}
           <section aria-labelledby="synthese" className="space-y-6 rounded-md border border-border bg-card p-6">
             <h2 id="synthese" className="font-display text-2xl font-semibold">
               Synthèse
             </h2>
+
+            <div className="space-y-2 rounded-md border-l-4 border-accent bg-muted p-4">
+              <h3 className="font-semibold">Notre diagnostic</h3>
+              <ul className="space-y-1.5 text-sm">
+                {view!.diagnosis.slice(0, -1).map((sentence) => (
+                  <li key={sentence} className="flex gap-2">
+                    <span aria-hidden="true" className="text-accent">→</span>
+                    {sentence}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-muted-foreground">{view!.diagnosis.at(-1)}</p>
+            </div>
+
             <div className="grid gap-8 md:grid-cols-[minmax(0,14rem)_1fr]">
               <ScoreHero report={report} />
               <div className="grid gap-5 sm:grid-cols-2">
@@ -85,79 +97,107 @@ export default async function AuditReportPage({ params }: { params: Promise<{ pr
               </div>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-3">
-              <div>
-                <h3 className="mb-2 font-semibold">Vos forces</h3>
-                {report.strengths.length ? (
-                  <ul className="space-y-2 text-sm">
-                    {report.strengths.slice(0, 3).map((s) => (
-                      <li key={s.criterionCode} className="flex gap-2">
-                        <span aria-hidden="true" className="text-[#0ca30c]">✓</span>
-                        {s.title}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-muted-foreground">{nothingMeasured ? NOTHING : "Aucun critère pleinement validé."}</p>
-                )}
-              </div>
-              <div>
-                <h3 className="mb-2 font-semibold">Vos faiblesses</h3>
-                {report.weaknesses.length ? (
-                  <ul className="space-y-2 text-sm">
-                    {report.weaknesses.slice(0, 3).map((w) => (
-                      <li key={w.criterionCode} className="space-y-1">
-                        <PriorityBadge priority={w.priority} /> <span className="font-medium">{w.title}</span>
-                        <p className="text-muted-foreground">{w.detail}</p>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-muted-foreground">{nothingMeasured ? NOTHING : "Aucune faiblesse relevée sur les critères mesurés."}</p>
-                )}
-              </div>
-              <div>
-                <h3 className="mb-2 font-semibold">Vos 3 actions prioritaires</h3>
-                {report.recommendations.length ? (
-                  <ol className="list-decimal space-y-2 pl-5 text-sm">
-                    {report.recommendations.slice(0, 3).map((r) => (
-                      <li key={r.criterionCode}>{r.recommendation}</li>
-                    ))}
-                  </ol>
-                ) : (
-                  <p className="text-sm text-muted-foreground">{nothingMeasured ? NOTHING : "Aucune action prioritaire sur les critères mesurés."}</p>
-                )}
-              </div>
+            <div className="grid gap-6 md:grid-cols-2">
+              {view!.groups.map((g) => (
+                <div key={g.id} className="space-y-2">
+                  <h3 className="font-semibold">{g.title} : vos priorités</h3>
+                  <p className="text-xs text-muted-foreground">{g.question}</p>
+                  {g.top.length ? (
+                    <ol className="space-y-3 text-sm">
+                      {g.top.map((r, i) => (
+                        <li key={r.criterionCode} className="space-y-0.5">
+                          <p className="flex flex-wrap items-center gap-2 font-medium">
+                            <span className="text-muted-foreground">{i + 1}.</span> {r.title} <PriorityBadge priority={r.priority} />
+                          </p>
+                          {/* Action technique : le frein en mots simples ici, la consigne détaillée dans le plan d'action. */}
+                          <p>
+                            {metaFor(r.criterionCode).owner === "WEB"
+                              ? `${capitalize(metaFor(r.criterionCode).issue)}. Fiche à transmettre à votre prestataire web dans le plan d'action.`
+                              : r.recommendation}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Qui : {OWNER_LABEL[metaFor(r.criterionCode).owner]} · {EFFORT_LABEL[r.effort]}
+                          </p>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">{nothingMeasured ? NOTHING : "Aucune action prioritaire sur les critères mesurés."}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div>
+              <h3 className="mb-2 font-semibold">Vos forces</h3>
+              {report.strengths.length ? (
+                <ul className="grid gap-2 text-sm sm:grid-cols-3">
+                  {report.strengths.slice(0, 3).map((s) => (
+                    <li key={s.criterionCode} className="flex gap-2">
+                      <span aria-hidden="true" className="text-[#0ca30c]">✓</span>
+                      {s.title}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">{nothingMeasured ? NOTHING : "Aucun critère pleinement validé."}</p>
+              )}
+            </div>
+
+            <div className="space-y-1 rounded-md border border-border p-4 text-sm">
+              <h3 className="font-semibold">Ce que ce rapport ne mesure pas</h3>
+              <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
+                {view!.notMeasured.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
             </div>
 
             <p className="rounded-md bg-muted p-3 text-xs text-muted-foreground">{report.disclaimer}</p>
           </section>
 
-          {/* 2. Plan d'action */}
+          {/* 2. Plan d'action : par question, puis par responsable */}
           {report.recommendations.length > 0 && (
-            <section aria-labelledby="plan" className="space-y-6">
-              <h2 id="plan" className="font-display text-2xl font-semibold">
-                Plan d&apos;action
-              </h2>
-              {PRIORITY_SECTIONS.map(({ priority, title, intro }) => {
-                const recs = report.recommendations.filter((r) => r.priority === priority);
-                if (recs.length === 0) return null;
-                return (
-                  <div key={priority} className="space-y-3">
-                    <div>
-                      <h3 className="flex items-center gap-2 text-lg font-semibold">
-                        {title} <PriorityBadge priority={priority} />
-                      </h3>
-                      <p className="text-sm text-muted-foreground">{intro}</p>
-                    </div>
-                    <div className="grid gap-3">
-                      {recs.map((r) => (
-                        <RecommendationCard key={r.criterionCode} rec={r} />
-                      ))}
-                    </div>
+            <section aria-labelledby="plan" className="space-y-8">
+              <div>
+                <h2 id="plan" className="font-display text-2xl font-semibold">
+                  Plan d&apos;action
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Dans chaque partie, les actions sont classées par ordre de priorité : gravité, puis ce qui aide à être trouvé, puis
+                  l&apos;effort le plus faible.
+                </p>
+              </div>
+              {view!.groups.map((g) =>
+                g.ownActions.length + g.webActions.length === 0 ? null : (
+                  <div key={g.id} className="space-y-4">
+                    <h3 className="text-xl font-semibold">{g.title}</h3>
+                    {g.ownActions.length > 0 && (
+                      <div className="space-y-3">
+                        <h4 className="font-semibold">À piloter par vous</h4>
+                        <div className="grid gap-3">
+                          {g.ownActions.map((r) => (
+                            <RecommendationCard key={r.criterionCode} rec={r} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {g.webActions.length > 0 && (
+                      <div className="space-y-3">
+                        <div>
+                          <h4 className="font-semibold">À transmettre à votre prestataire web</h4>
+                          <p className="text-xs text-muted-foreground">Points techniques : vous pouvez lui transmettre ces fiches telles quelles.</p>
+                        </div>
+                        <div className="grid gap-3">
+                          {g.webActions.map((r) => (
+                            <RecommendationCard key={r.criterionCode} rec={r} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                );
-              })}
+                ),
+              )}
             </section>
           )}
 

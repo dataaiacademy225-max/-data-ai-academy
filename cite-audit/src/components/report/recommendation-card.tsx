@@ -1,5 +1,6 @@
 import type { Evidence, Recommendation } from "@/server/scoring/types";
-import { EFFORT_LABEL, formatPoints, PriorityBadge } from "@/components/report/labels";
+import { EFFORT_LABEL, PriorityBadge } from "@/components/report/labels";
+import { metaFor, OWNER_LABEL } from "@/server/report/view";
 
 export function EvidenceList({ evidence }: { evidence: Evidence[] }) {
   if (evidence.length === 0) return null;
@@ -24,7 +25,7 @@ export function RecommendationCard({ rec, index }: { rec: Recommendation; index?
         <h4 className="font-semibold">{rec.title}</h4>
         <PriorityBadge priority={rec.priority} />
         <span className="text-xs text-muted-foreground">
-          {EFFORT_LABEL[rec.effort]} · jusqu&apos;à {formatPoints(rec.pointsAtStake)} pt{rec.pointsAtStake > 1 ? "s" : ""}
+          {EFFORT_LABEL[rec.effort]} · Qui : {OWNER_LABEL[metaFor(rec.criterionCode).owner]}
         </span>
       </header>
       <dl className="space-y-2 text-sm">
