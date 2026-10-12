@@ -5,8 +5,10 @@ import { redirect } from "next/navigation";
 import { isAPIError } from "better-auth/api";
 import { z } from "zod";
 import { getAuth } from "@/lib/auth";
+import { clientIp } from "@/lib/client-ip";
 import { logger } from "@/lib/logger";
 import { signInSchema, signUpSchema } from "@/lib/validation/auth";
+import { consumeLimit, LIMITS, resetLimit, tooManyAttemptsMessage } from "@/server/services/rate-limit";
 
 export type AuthFormState = {
   error?: string;
@@ -26,8 +28,22 @@ export async function signInAction(_prev: AuthFormState, formData: FormData): Pr
     return { fieldErrors: z.flattenError(parsed.error).fieldErrors, values: { email: raw.email } };
   }
 
+  // Limites anti-abus : par adresse IP et par e-mail (devinette de mot de passe).
+  const requestHeaders = await headers();
+  const emailKey = `sign-in:email:${parsed.data.email.toLowerCase()}`;
+  for (const [key, rule] of [
+    [`sign-in:ip:${clientIp(requestHeaders)}`, LIMITS.signInPerIp],
+    [emailKey, LIMITS.signInPerEmail],
+  ] as const) {
+    const limit = await consumeLimit(key, rule);
+    if (!limit.allowed) {
+      logger.warn("auth.sign_in_rate_limited", {});
+      return { error: tooManyAttemptsMessage(limit.retryAfterMs), values: { email: raw.email } };
+    }
+  }
+
   try {
-    await getAuth().api.signInEmail({ body: parsed.data, headers: await headers() });
+    await getAuth().api.signInEmail({ body: parsed.data, headers: requestHeaders });
   } catch (error) {
     if (isAPIError(error)) {
       // Message volontairement identique que l'e-mail existe ou non.
@@ -36,6 +52,7 @@ export async function signInAction(_prev: AuthFormState, formData: FormData): Pr
     logger.error("auth.sign_in_failed", { error });
     return { error: "Connexion impossible pour le moment. Réessayez.", values: { email: raw.email } };
   }
+  await resetLimit(emailKey);
   redirect("/dashboard");
 }
 
@@ -52,9 +69,16 @@ export async function signUpAction(_prev: AuthFormState, formData: FormData): Pr
     return { fieldErrors: z.flattenError(parsed.error).fieldErrors, values };
   }
 
+  const requestHeaders = await headers();
+  const limit = await consumeLimit(`sign-up:ip:${clientIp(requestHeaders)}`, LIMITS.signUpPerIp);
+  if (!limit.allowed) {
+    logger.warn("auth.sign_up_rate_limited", {});
+    return { error: tooManyAttemptsMessage(limit.retryAfterMs), values };
+  }
+
   try {
     const { name, email, password } = parsed.data;
-    await getAuth().api.signUpEmail({ body: { name, email, password }, headers: await headers() });
+    await getAuth().api.signUpEmail({ body: { name, email, password }, headers: requestHeaders });
   } catch (error) {
     if (isAPIError(error)) {
       return { error: "Impossible de créer un compte avec cette adresse e-mail.", values };

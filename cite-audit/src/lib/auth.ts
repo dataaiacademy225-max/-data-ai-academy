@@ -21,10 +21,13 @@ function createAuth() {
       expiresIn: 60 * 60 * 24 * 7, // 7 jours
       updateAge: 60 * 60 * 24,
     },
+    // Limite des routes HTTP /api/auth/* (les server actions ont leur propre limite : services/rate-limit.ts).
+    // Stockage en base : la limite tient après un redémarrage et avec plusieurs instances.
     rateLimit: {
       enabled: process.env.NODE_ENV === "production",
       window: 60,
       max: 20,
+      storage: "database",
     },
     // nextCookies doit rester le dernier plugin : il pose les cookies depuis les server actions.
     plugins: [nextCookies()],

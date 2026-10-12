@@ -7,8 +7,8 @@ process.env.DATABASE_URL = getTestDatabaseUrl();
 const { prisma } = await import("@/lib/db");
 
 beforeEach(async () => {
-  // Les suppressions en cascade vident projets, audits, pages, problèmes et résultats IA.
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "user", "verification" CASCADE');
+  // Les suppressions en cascade vident projets, audits, pages, problèmes et résultats IA ; puis les limites anti-abus.
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE "user", "verification", "rateLimit", "ActionLimit" CASCADE');
 });
 
 afterAll(async () => {

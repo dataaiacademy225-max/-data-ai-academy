@@ -6,6 +6,7 @@ import { getAuth } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { requireUser } from "@/lib/session";
 import { deleteAccount } from "@/server/services/account";
+import { consumeLimit, LIMITS, tooManyAttemptsMessage } from "@/server/services/rate-limit";
 
 export type DeleteAccountState = { error?: string };
 
@@ -21,6 +22,12 @@ export async function deleteAccountAction(_prev: DeleteAccountState, formData: F
   }
   if (typeof password !== "string" || !password || password.length > 128) {
     return { error: "Saisissez votre mot de passe actuel." };
+  }
+
+  const limit = await consumeLimit(`delete-account:user:${user.id}`, LIMITS.deleteAccountPerUser);
+  if (!limit.allowed) {
+    logger.warn("account.delete_rate_limited", { userId: user.id });
+    return { error: tooManyAttemptsMessage(limit.retryAfterMs) };
   }
 
   const auth = getAuth();

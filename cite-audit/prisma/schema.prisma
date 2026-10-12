@@ -274,3 +274,25 @@ model AiQueryResult {
   @@unique([runId, position])
   @@index([runId, status])
 }
+
+// ─── Limites anti-abus ───────────────────────────────────────────
+
+/// Table attendue par Better Auth (rateLimit.storage = "database") pour ses routes HTTP /api/auth/*.
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rateLimit")
+}
+
+/// Limites des server actions (connexion, inscription, suppression de compte).
+/// La clé est une empreinte SHA-256 : ni e-mail ni adresse IP en clair.
+model ActionLimit {
+  key         String   @id
+  count       Int
+  windowStart DateTime
+
+  @@index([windowStart])
+}
