@@ -15,6 +15,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           </Link>
           <div className="flex items-center gap-3 text-sm">
             <span className="hidden text-muted-foreground sm:inline">{user.email}</span>
+            <Link href="/settings/account" className="text-muted-foreground hover:text-foreground hover:underline">
+              Mon compte
+            </Link>
             <form action={signOutAction}>
               <Button type="submit" variant="ghost" size="sm">
                 Se déconnecter
