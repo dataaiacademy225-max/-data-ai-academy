@@ -47,6 +47,12 @@ describe("pages légales", () => {
     expect(off).toContain("aucune suppression automatique");
   });
 
+  it("présentent l'éditeur comme une personne physique exploitant la marque, sans ligne d'immatriculation vide", () => {
+    const notice = pages["mentions-legales"].sections.find((s) => s.title === "Éditeur");
+    expect(notice?.paragraphs[0]).toContain("personne physique exploitant la marque commerciale Data & AI Academy");
+    expect(notice?.paragraphs).not.toContain("");
+  });
+
   it("formate les durées", () => {
     expect(formatRetention(730)).toBe("2 ans");
     expect(formatRetention(365)).toBe("1 an");
@@ -56,6 +62,6 @@ describe("pages légales", () => {
 
   it("signalent le brouillon tant qu'un champ reste à compléter", () => {
     expect(hasPlaceholders(LEGAL_ENTITY)).toBe(true);
-    expect(hasPlaceholders({ companyName: "Data & AI Academy SARL" })).toBe(false);
+    expect(hasPlaceholders({ publisherName: "Awa Koné", registration: "" })).toBe(false);
   });
 });

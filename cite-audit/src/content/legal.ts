@@ -6,13 +6,15 @@
  * de traitement de données (nouveau prestataire, nouvelle donnée collectée, nouvelle durée).
  */
 
+// Éditeur actuel : une personne physique qui exploite la marque commerciale « Data & AI Academy »
+// (pas encore de société immatriculée). Après immatriculation : remplacer `legalStatus`
+// et renseigner `registration` (RCCM, compte contribuable) ; vide = ligne non affichée.
 export const LEGAL_ENTITY = {
-  companyName: "[À COMPLÉTER : raison sociale de Data & AI Academy]",
-  legalForm: "[À COMPLÉTER : forme juridique et capital social]",
-  registration: "[À COMPLÉTER : numéro RCCM et compte contribuable]",
-  address: "[À COMPLÉTER : adresse du siège, Abidjan, Côte d'Ivoire]",
+  publisherName: "[À COMPLÉTER : vos prénom et nom]",
+  legalStatus: "personne physique exploitant la marque commerciale Data & AI Academy",
+  registration: "",
+  address: "[À COMPLÉTER : adresse postale, Abidjan, Côte d'Ivoire]",
   contactEmail: "[À COMPLÉTER : adresse e-mail de contact]",
-  publicationDirector: "[À COMPLÉTER : nom du directeur de la publication]",
   host: "[À COMPLÉTER : nom, adresse et pays de l'hébergeur]",
   emailProvider: "[À COMPLÉTER : prestataire d'envoi d'e-mails et pays]",
   jurisdiction: "[À COMPLÉTER : tribunal compétent, par exemple Abidjan]",
@@ -67,9 +69,9 @@ export function legalPages(params: LegalParams): Record<LegalSlug, LegalPage> {
       sections: [
         {
           title: "Éditeur",
-          paragraphs: [`${e.companyName}, ${e.legalForm}.`, e.registration, `Siège : ${e.address}.`, `Contact : ${e.contactEmail}.`],
+          paragraphs: [`${e.publisherName}, ${e.legalStatus}.`, ...(e.registration ? [e.registration] : []), `Adresse : ${e.address}.`, `Contact : ${e.contactEmail}.`],
         },
-        { title: "Directeur de la publication", paragraphs: [e.publicationDirector] },
+        { title: "Directeur de la publication", paragraphs: [e.publisherName] },
         { title: "Représentant dans l'Union européenne", paragraphs: [e.euRepresentative] },
         { title: "Hébergement", paragraphs: [e.host] },
         {
@@ -88,7 +90,7 @@ export function legalPages(params: LegalParams): Record<LegalSlug, LegalPage> {
       sections: [
         {
           title: "Responsable du traitement",
-          paragraphs: [`${e.companyName}, ${e.address}. Contact pour toute question sur vos données : ${e.contactEmail}.`],
+          paragraphs: [`${e.publisherName}, ${e.legalStatus}, ${e.address}. Contact pour toute question sur vos données : ${e.contactEmail}.`],
         },
         {
           title: "Données collectées",
