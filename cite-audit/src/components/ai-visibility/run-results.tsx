@@ -13,7 +13,7 @@ const RUN_STATUS: Record<string, string> = {
   SUCCEEDED: "Terminé",
   PARTIAL: "Terminé avec des erreurs",
   FAILED: "Échec",
-  CANCELED: "Annulé",
+  CANCELED: "Annulée (non démarrée à temps)",
 };
 
 /** Oui / Non / – (non mesuré), avec icône et libellé : la couleur n'est jamais seule porteuse de sens. */
@@ -27,13 +27,17 @@ function Flag({ label, value }: { label: string; value: boolean | null }) {
   );
 }
 
-function ResultItem({ result }: { result: AiQueryResult }) {
+function ResultItem({ result, canceled }: { result: AiQueryResult; canceled: boolean }) {
   const sources = (result.sources as Source[] | null) ?? [];
   const competitors = ((result.competitorsMentioned as Competitor[] | null) ?? []).filter((c) => c.mentioned || c.cited);
   return (
     <li className="space-y-2 p-4">
       <p className="font-medium">« {result.query} »</p>
-      {result.status === "PENDING" && <p className="text-sm text-muted-foreground">En attente d&apos;envoi…</p>}
+      {result.status === "PENDING" && (
+        <p className="text-sm text-muted-foreground">
+          {canceled ? "Non envoyée : la mesure a été annulée car elle n'a pas démarré à temps (aucun coût)." : "En attente d'envoi…"}
+        </p>
+      )}
       {result.status === "FAILED" && (
         <p className="text-sm text-destructive">
           Échec ({result.errorCode}
@@ -119,7 +123,7 @@ export function RunResults({ run }: { run: Run }) {
       </header>
       <ul className="divide-y divide-border">
         {run.results.map((r) => (
-          <ResultItem key={r.id} result={r} />
+          <ResultItem key={r.id} result={r} canceled={run.status === "CANCELED"} />
         ))}
       </ul>
     </article>

@@ -3,7 +3,8 @@ import { prisma } from "@/lib/db";
 import { processAiRun } from "@/server/ai-visibility/process-run";
 import { claimNextAiRun } from "@/server/ai-visibility/queue";
 import { AiProviderError, type AiAnswer, type AiProvider } from "@/server/ai-visibility/types";
-import { getAiModuleStatus, requestAiRun } from "@/server/services/ai-visibility";
+import { getAiModuleStatus, queriesUsedToday, requestAiRun } from "@/server/services/ai-visibility";
+import { QUEUED_STALE_MS } from "@/server/services/audits";
 import { createProject } from "@/server/services/projects";
 import { createUser, projectInput } from "./factories";
 
@@ -127,6 +128,28 @@ describe("requestAiRun", () => {
     expect(await launch(bob.id, project.id, ["Q1 x"])).toEqual({ ok: false, error: "NOT_FOUND" });
     const demo = await prisma.project.create({ data: { ...input, userId: alice.id, isDemo: true, ownershipAttestedAt: new Date() } });
     expect(await launch(alice.id, demo.id, ["Q1 x"])).toEqual({ ok: false, error: "DEMO_PROJECT" });
+  });
+
+  it("annule une mesure restée en attente trop longtemps (worker absent) et en accepte une nouvelle", async () => {
+    const user = await createUser();
+    const project = await createProject(user.id, input);
+    const first = await launch(user.id, project.id, ["Q1 x", "Q2 x"]);
+    if (!first.ok) throw new Error(first.error);
+    expect(await launch(user.id, project.id, ["Q1 x"])).toEqual({ ok: false, error: "ALREADY_RUNNING" });
+
+    await prisma.aiVisibilityRun.update({ where: { id: first.runId }, data: { queuedAt: new Date(Date.now() - QUEUED_STALE_MS - 1000) } });
+    expect((await launch(user.id, project.id, ["Q1 x"])).ok).toBe(true);
+    expect(await prisma.aiVisibilityRun.findUniqueOrThrow({ where: { id: first.runId } })).toMatchObject({ status: "CANCELED", errorCode: "QUEUE_TIMEOUT" });
+  });
+
+  it("les requêtes jamais envoyées d'une mesure annulée ne consomment pas le quota", async () => {
+    const user = await createUser();
+    const project = await createProject(user.id, input);
+    const run = await launch(user.id, project.id, ["Q1 x", "Q2 x", "Q3 x"]);
+    if (!run.ok) throw new Error(run.error);
+    expect(await queriesUsedToday(user.id)).toBe(3);
+    await prisma.aiVisibilityRun.update({ where: { id: run.runId }, data: { status: "CANCELED" } });
+    expect(await queriesUsedToday(user.id)).toBe(0);
   });
 
   it("refuse un modèle non proposé", async () => {

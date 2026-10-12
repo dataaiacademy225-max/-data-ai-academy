@@ -4,6 +4,7 @@ import { getAiEnv } from "@/lib/env";
 import { prisma } from "@/lib/db";
 import type { Competitor } from "@/lib/validation/project";
 import { describeProviders } from "@/server/ai-visibility/providers";
+import { QUEUED_STALE_MS } from "@/server/services/audits";
 import type { AiProviderId } from "@/server/ai-visibility/types";
 
 export type AiLaunchError =
@@ -29,11 +30,26 @@ export function getAiModuleStatus() {
   };
 }
 
-/** Requêtes IA envoyées ou programmées par l'utilisateur sur les dernières 24 h. */
+/**
+ * Requêtes IA envoyées ou programmées par l'utilisateur sur les dernières 24 h.
+ * Les requêtes jamais envoyées d'une mesure annulée ne comptent pas.
+ */
 export async function queriesUsedToday(userId: string): Promise<number> {
   return prisma.aiQueryResult.count({
-    where: { run: { project: { userId }, queuedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } } },
+    where: {
+      run: { project: { userId }, queuedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+      OR: [{ status: { not: "PENDING" } }, { run: { status: { not: "CANCELED" } } }],
+    },
   });
+}
+
+/** Annule les mesures restées en attente trop longtemps (worker absent) pour ne pas bloquer le projet. */
+export async function cancelStaleAiRuns(projectId: string): Promise<number> {
+  const { count } = await prisma.aiVisibilityRun.updateMany({
+    where: { projectId, status: "QUEUED", queuedAt: { lt: new Date(Date.now() - QUEUED_STALE_MS) } },
+    data: { status: "CANCELED", finishedAt: new Date(), errorCode: "QUEUE_TIMEOUT" },
+  });
+  return count;
 }
 
 export async function requestAiRun(
@@ -53,6 +69,7 @@ export async function requestAiRun(
   if (input.queries.length === 0) return { ok: false, error: "NO_QUERIES" };
   if (input.queries.length > status.limits.perRun) return { ok: false, error: "TOO_MANY_QUERIES" };
   if ((await queriesUsedToday(userId)) + input.queries.length > status.limits.perDay) return { ok: false, error: "DAILY_LIMIT" };
+  await cancelStaleAiRuns(projectId);
   if (await prisma.aiVisibilityRun.findFirst({ where: { projectId, status: { in: ["QUEUED", "RUNNING"] } } })) {
     return { ok: false, error: "ALREADY_RUNNING" };
   }
