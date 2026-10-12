@@ -7,6 +7,7 @@ import { signOutAction } from "@/server/actions/auth";
 import { resendVerificationEmailAction } from "@/server/actions/password";
 import { VerifyEmailBanner } from "@/components/auth/verify-email-banner";
 import { LegalLinks } from "@/components/legal/legal-document";
+import { BrandName } from "@/components/brand-name";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const user = await requireUser();
@@ -15,7 +16,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <header className="border-b border-border bg-card">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-4">
           <Link href="/dashboard" className="font-display text-lg font-bold">
-            CITE <span className="text-accent">Audit</span>
+            <BrandName />
           </Link>
           <div className="flex items-center gap-3 text-sm">
             <span className="hidden text-muted-foreground sm:inline">{user.email}</span>

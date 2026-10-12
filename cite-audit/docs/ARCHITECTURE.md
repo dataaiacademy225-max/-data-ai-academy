@@ -1,4 +1,4 @@
-# CITE Audit — Dossier de conception (v0.1)
+# GriotCite (ex-CITE Audit) — Dossier de conception (v0.1)
 
 > Statut : **validé**. Étape 1 (socle) en place. Modification et suppression de projet, suppression de compte (§4.1) en place depuis octobre 2026. Le schéma de référence est `prisma/schema.prisma` ; la §3.2 ci-dessous est la proposition initiale.
 >
@@ -10,7 +10,7 @@
 >
 > Visibilité IA (implémentée) : clé fournisseur en variable d'environnement serveur (pas de table `ApiCredential` pour l'instant) ; `AiVisibilityRun` (lancement, file d'attente, coût estimé/réel) et `AiQueryResult` (une ligne par requête : statut, essais, réponse brute, JSON complet, sources, mention/citation/recommandation, concurrents, erreur) ; Perplexity via l'Agent API (`/v1/responses`, modèle `perplexity/sonar`) depuis le retrait de Sonar Chat Completions (27/09/2026).
 >
-> CITE Audit mesure des signaux observables. Il ne garantit aucune position dans Google ni aucune citation ou recommandation par une IA. Le score CITE est un indicateur interne à Data & AI Academy.
+> GriotCite mesure des signaux observables. Il ne garantit aucune position dans Google ni aucune citation ou recommandation par une IA. Le score CITE est un indicateur interne à Data & AI Academy.
 
 Sommaire
 

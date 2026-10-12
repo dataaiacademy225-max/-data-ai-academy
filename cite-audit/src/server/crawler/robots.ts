@@ -1,8 +1,8 @@
 import robotsParser from "robots-parser";
 import type { CrawlError, FetchedResource, Result } from "@/server/crawler/types";
 
-/** Nom de robot à cibler dans un robots.txt (« User-agent: CITE-Audit »). */
-export const ROBOTS_USER_AGENT = "CITE-Audit";
+/** Nom de robot à cibler dans un robots.txt (« User-agent: GriotCite »). */
+export const ROBOTS_USER_AGENT = "GriotCite";
 
 export type RobotsDecision =
   | { allowed: true; status: "ALLOWED" | "NO_ROBOTS_TXT" }

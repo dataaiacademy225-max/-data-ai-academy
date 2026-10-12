@@ -1,3 +1,5 @@
+import { APP_NAME } from "@/lib/brand";
+
 /**
  * Pages légales : BROUILLON à faire valider par un juriste avant toute ouverture au public.
  * Les informations sur l'éditeur sont regroupées ici. Tant qu'un champ contient « À COMPLÉTER »,
@@ -65,7 +67,7 @@ export function legalPages(params: LegalParams): Record<LegalSlug, LegalPage> {
   return {
     "mentions-legales": {
       title: "Mentions légales",
-      intro: "Informations sur l'éditeur et l'hébergeur du service CITE Audit.",
+      intro: `Informations sur l'éditeur et l'hébergeur du service ${APP_NAME}.`,
       sections: [
         {
           title: "Éditeur",
@@ -77,7 +79,7 @@ export function legalPages(params: LegalParams): Record<LegalSlug, LegalPage> {
         {
           title: "Nature du service",
           paragraphs: [
-            "CITE Audit analyse des signaux observables sur un site internet. Le score CITE est un indicateur interne de Data & AI Academy : ce n'est pas une mesure de Google, de ChatGPT, de Perplexity, de Gemini ou d'une autre IA.",
+            `${APP_NAME} analyse des signaux observables sur un site internet. Le score CITE est un indicateur interne de Data & AI Academy : ce n'est pas une mesure de Google, de ChatGPT, de Perplexity, de Gemini ou d'une autre IA.`,
             "Aucune position dans un moteur de recherche ni aucune citation ou recommandation par une IA n'est garantie.",
           ],
         },
@@ -86,7 +88,7 @@ export function legalPages(params: LegalParams): Record<LegalSlug, LegalPage> {
     confidentialite: {
       title: "Politique de confidentialité",
       intro:
-        "Cette page explique quelles données CITE Audit collecte, pourquoi, combien de temps elles sont gardées et comment exercer vos droits.",
+        `Cette page explique quelles données ${APP_NAME} collecte, pourquoi, combien de temps elles sont gardées et comment exercer vos droits.`,
       sections: [
         {
           title: "Responsable du traitement",
@@ -143,7 +145,7 @@ export function legalPages(params: LegalParams): Record<LegalSlug, LegalPage> {
         {
           title: "Utilisateurs concernés et transferts internationaux",
           paragraphs: [
-            "CITE Audit s'adresse aux entreprises des pays francophones d'Afrique et d'Europe. Les données sont traitées conformément à la loi ivoirienne n° 2013-450 relative à la protection des données à caractère personnel, à la loi applicable dans le pays de l'utilisateur et, pour les utilisateurs situés dans l'Union européenne, au Règlement général sur la protection des données (RGPD).",
+            `${APP_NAME} s'adresse aux entreprises des pays francophones d'Afrique et d'Europe. Les données sont traitées conformément à la loi ivoirienne n° 2013-450 relative à la protection des données à caractère personnel, à la loi applicable dans le pays de l'utilisateur et, pour les utilisateurs situés dans l'Union européenne, au Règlement général sur la protection des données (RGPD).`,
             `Représentant dans l'Union européenne : ${e.euRepresentative}.`,
             "Certains prestataires peuvent être situés dans un autre pays que le vôtre. Ces transferts sont encadrés par des garanties adaptées (clauses contractuelles types de la Commission européenne ou décision d'adéquation). [À COMPLÉTER : garanties retenues, après choix des prestataires.]",
           ],
@@ -151,7 +153,7 @@ export function legalPages(params: LegalParams): Record<LegalSlug, LegalPage> {
         {
           title: "Cookies",
           paragraphs: [
-            "CITE Audit utilise uniquement un cookie de session, strictement nécessaire pour vous garder connecté. Aucun cookie publicitaire ni de mesure d'audience n'est utilisé ; aucun consentement n'est donc demandé.",
+            `${APP_NAME} utilise uniquement un cookie de session, strictement nécessaire pour vous garder connecté. Aucun cookie publicitaire ni de mesure d'audience n'est utilisé ; aucun consentement n'est donc demandé.`,
           ],
         },
         {
@@ -176,7 +178,7 @@ export function legalPages(params: LegalParams): Record<LegalSlug, LegalPage> {
         {
           title: "Le service",
           paragraphs: [
-            "CITE Audit analyse des signaux observables sur un site internet selon la méthode CITE (Clarifier, Indexer, Tunnel, Enclencher) et produit un rapport et des recommandations. Un module facultatif mesure un échantillon de réponses d'IA à des requêtes que vous choisissez.",
+            `${APP_NAME} analyse des signaux observables sur un site internet selon la méthode CITE (Clarifier, Indexer, Tunnel, Enclencher) et produit un rapport et des recommandations. Un module facultatif mesure un échantillon de réponses d'IA à des requêtes que vous choisissez.`,
           ],
         },
         {

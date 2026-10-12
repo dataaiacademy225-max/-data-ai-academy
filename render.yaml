@@ -1,4 +1,4 @@
-# Blueprint Render : CITE Audit en hébergement gratuit (un seul service web, worker intégré).
+# Blueprint Render : GriotCite en hébergement gratuit (un seul service web, worker intégré).
 # Base de données : PostgreSQL externe (Neon, offre gratuite) — la base gratuite de Render est supprimée après 30 jours.
 # Les valeurs « sync: false » sont demandées par Render à la création : ne jamais les écrire dans ce fichier.
 services:
@@ -36,6 +36,6 @@ services:
       - key: SMTP_URL
         sync: false # fourni par le prestataire d'e-mails (Brevo…)
       - key: EMAIL_FROM
-        value: CITE Audit <no-reply@data-ai-academy.com>
+        value: GriotCite <no-reply@data-ai-academy.com>
       - key: TRUSTED_PROXY_COUNT
         value: "1"

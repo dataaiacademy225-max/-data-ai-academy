@@ -1,5 +1,5 @@
 /**
- * Worker CITE Audit : processus séparé de l'application web.
+ * Worker GriotCite : processus séparé de l'application web.
  * Lancement : `pnpm worker` (dans un second terminal, à côté de `pnpm dev`).
  * En hébergement gratuit, la même boucle tourne dans l'application web (RUN_WORKER_IN_WEB, voir src/instrumentation.ts).
  */

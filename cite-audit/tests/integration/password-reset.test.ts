@@ -32,7 +32,7 @@ describe("e-mails d'authentification", () => {
 
     await getAuth().api.requestPasswordReset({ body: { email: "awa@exemple-test.com" } });
     expect(testOutbox).toHaveLength(1);
-    expect(testOutbox[0].subject).toBe("Changer votre mot de passe CITE Audit");
+    expect(testOutbox[0].subject).toBe("Changer votre mot de passe GriotCite");
     const token = tokenFrom(testOutbox[0].text);
     expect(token.length).toBeGreaterThan(10);
 

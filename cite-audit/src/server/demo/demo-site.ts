@@ -9,7 +9,7 @@ export const DEMO_HOME_HTML = `<!doctype html>
 <head>
   <meta charset="utf-8">
   <title>[DÉMO] Cabinet Exemple Conseil</title>
-  <meta name="description" content="Cabinet de conseil en data fictif utilisé pour la démonstration de CITE Audit.">
+  <meta name="description" content="Cabinet de conseil en data fictif utilisé pour la démonstration de GriotCite.">
   <link rel="canonical" href="https://www.example.com/">
   <meta property="og:title" content="[DÉMO] Cabinet Exemple Conseil">
 </head>

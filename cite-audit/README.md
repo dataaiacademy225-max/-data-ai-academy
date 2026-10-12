@@ -1,6 +1,6 @@
-# CITE Audit
+# GriotCite
 
-SaaS d'audit des signaux observables qui peuvent influencer la visibilité d'une entreprise dans Google et les assistants IA (méthode CITE : Clarifier, Indexer, Tunnel, Enclencher). Marque : Data & AI Academy.
+SaaS d'audit des signaux observables qui peuvent influencer la visibilité d'une entreprise dans Google et les assistants IA, selon la méthode CITE (Clarifier, Indexer, Tunnel, Enclencher). Marque : Data & AI Academy. Ancien nom : CITE Audit (le dossier `cite-audit/` garde ce nom).
 
 > Aucun audit ne garantit une position dans Google ni une citation ou recommandation par une IA. Le score CITE est un indicateur interne.
 

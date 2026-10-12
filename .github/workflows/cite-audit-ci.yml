@@ -1,6 +1,6 @@
-# Vérifications automatiques de CITE Audit à chaque push et pull request touchant cite-audit/.
+# Vérifications automatiques de GriotCite à chaque push et pull request touchant cite-audit/.
 # Aucun secret requis : base PostgreSQL jetable, aucun appel à Internet pendant les tests.
-name: CITE Audit CI
+name: GriotCite CI
 
 on:
   push:
