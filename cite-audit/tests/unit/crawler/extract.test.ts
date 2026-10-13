@@ -33,7 +33,7 @@ describe("extractPageFacts — page valide", () => {
     expect(internal).toContain("https://www.site-test.com/a-propos");
     expect(internal.filter((u) => u === "https://site-test.com/offres")).toHaveLength(1); // #tarifs fusionné
     expect(internal.some((u) => u.startsWith("javascript"))).toBe(false);
-    const insee = facts.externalLinks.find((l) => l.url.includes("insee.fr"));
+    const insee = facts.externalLinks.find((l) => new URL(l.url).hostname === "www.insee.fr");
     expect(insee).toMatchObject({ text: "INSEE", nofollow: true });
     expect(facts.externalLinks.map((l) => new URL(l.url).hostname)).toContain("www.linkedin.com");
   });

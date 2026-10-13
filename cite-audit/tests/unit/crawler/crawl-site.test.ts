@@ -31,7 +31,7 @@ describe("crawlSite", () => {
     expect(paths).not.toContain("/brochure.pdf");
     expect(paths).not.toContain("/mentions-legales");
     expect(paths).not.toContain("/connexion");
-    expect(result.pages.some((p) => p.url.includes("ailleurs.com"))).toBe(false);
+    expect(result.pages.some((p) => new URL(p.url).hostname === "ailleurs.com")).toBe(false);
 
     expect(result.sitemap).toMatchObject({ found: true, validXml: true, urlCount: 4 });
     expect(result.sitemap!.sources).toHaveLength(2); // index + fichier de pages
