@@ -7,7 +7,7 @@
 # le worker termine ainsi proprement l'audit en cours quand le conteneur est arrêté.
 # Aucun secret n'est copié dans l'image : tout passe par les variables d'environnement au lancement.
 
-FROM node:22-bookworm-slim AS base
+FROM node:26-bookworm-slim AS base
 ENV NEXT_TELEMETRY_DISABLED=1 \
     COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable
