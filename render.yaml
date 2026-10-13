@@ -11,7 +11,7 @@ services:
     dockerfilePath: ./cite-audit/Dockerfile
     dockerContext: ./cite-audit
     # Migrations puis démarrage (l'offre gratuite n'a pas d'étape « pre-deploy »).
-    dockerCommand: sh -c "pnpm db:deploy && exec node node_modules/next/dist/bin/next start"
+    dockerCommand: sh scripts/start-with-migrations.sh
     healthCheckPath: /login
     buildFilter:
       paths:

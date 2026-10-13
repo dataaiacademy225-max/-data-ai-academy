@@ -2,6 +2,7 @@
 #   web     : docker run …                     (commande par défaut)
 #   worker  : docker run … node --import tsx --conditions=react-server src/worker/index.ts
 #   migrer  : docker run … pnpm db:deploy
+#   tout-en-un (Render) : docker run … sh scripts/start-with-migrations.sh
 # Web et worker sont lancés par node directement (pas par pnpm, qui ne transmet pas le signal d'arrêt) :
 # le worker termine ainsi proprement l'audit en cours quand le conteneur est arrêté.
 # Aucun secret n'est copié dans l'image : tout passe par les variables d'environnement au lancement.
@@ -26,8 +27,10 @@ FROM base AS runtime
 ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0
-# pnpm est téléchargé une fois pour toutes, pour ne pas dépendre du réseau au démarrage.
-RUN corepack prepare --activate pnpm@10.28.0 && mkdir -p /home/node/.cache && chown -R node:node /home/node
+# pnpm est téléchargé une fois pour toutes, dans un dossier lisible par l'utilisateur « node »,
+# pour ne pas dépendre du réseau au démarrage.
+ENV COREPACK_HOME=/opt/corepack
+RUN corepack prepare --activate pnpm@10.28.0 && chmod -R a+rX /opt/corepack
 COPY --from=build --chown=node:node /app /app
 # Utilisateur sans privilèges.
 USER node
