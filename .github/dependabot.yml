@@ -1,0 +1,22 @@
+# Mises à jour automatiques des dépendances (Dependabot) : une demande de fusion par groupe, chaque lundi.
+# Les correctifs de sécurité arrivent sans attendre, dès qu'une alerte est publiée.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /cite-audit
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      # Les mises à jour mineures et correctives sont regroupées ; les versions majeures restent séparées.
+      minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+  - package-ecosystem: docker
+    directory: /cite-audit
+    schedule:
+      interval: monthly

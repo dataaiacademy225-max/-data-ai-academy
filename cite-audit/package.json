@@ -58,6 +58,10 @@
       "@prisma/engines",
       "prisma",
       "esbuild"
-    ]
+    ],
+    "overrides": {
+      "deepmerge-ts": "^8.0.2",
+      "mysql2": "^3.24.6"
+    }
   }
 }
