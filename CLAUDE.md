@@ -5,7 +5,7 @@ Dépôt de Data & AI Academy :
 - Domaine `data-ai-academy.com` (Namecheap) : GriotCite sera servi sur le sous-domaine `audit.data-ai-academy.com`.
 - `cite-audit/` : SaaS **GriotCite** (ancien nom : CITE Audit ; dossiers et identifiants techniques inchangés). Nom défini dans `src/lib/brand.ts` ; la méthode et le score gardent le nom **CITE**. Toutes les commandes ci-dessous se lancent depuis ce dossier.
 
-Conception de référence : `cite-audit/docs/ARCHITECTURE.md`. Installation détaillée : `cite-audit/README.md`. Tarification et coûts d'API (brouillon non implémenté) : `cite-audit/docs/PRICING.md`.
+Conception de référence : `cite-audit/docs/ARCHITECTURE.md`. Installation détaillée : `cite-audit/README.md`. Tarification et coûts d'API (brouillon non implémenté) : `cite-audit/docs/PRICING.md`. Dossier de sécurité (protections, limites connues) : `cite-audit/docs/SECURITY.md` — le tenir à jour à chaque nouvelle protection.
 
 ## Interdiction absolue : aucune promesse de résultat IA
 
