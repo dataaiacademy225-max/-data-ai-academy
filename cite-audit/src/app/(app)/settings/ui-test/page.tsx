@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { AreaChartDemo } from "@/components/ui-test/area-chart-demo";
 import { DialogDemo } from "@/components/ui-test/dialog-demo";
 import { isOwner } from "@/lib/access";
 import { requireUser } from "@/lib/session";
@@ -36,7 +37,7 @@ export default async function UiTestPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold">Test des composants</h1>
-        <p className="text-sm text-muted-foreground">Boutons, tableau et fenêtre de dialogue au format shadcn/ui.</p>
+        <p className="text-sm text-muted-foreground">Boutons, tableau, fenêtre de dialogue et graphique.</p>
       </div>
 
       <Card>
@@ -110,6 +111,16 @@ export default async function UiTestPage() {
         </CardHeader>
         <CardContent>
           <DialogDemo />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Graphique de zone</CardTitle>
+          <CardDescription>Composant au format Tremor, construit sur Recharts.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AreaChartDemo />
         </CardContent>
       </Card>
     </div>
