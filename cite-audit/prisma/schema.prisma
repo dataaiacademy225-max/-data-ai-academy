@@ -45,19 +45,22 @@ enum AiProviderKind {
 // ─── Authentification (tables attendues par Better Auth) ─────────
 
 model User {
-  id            String    @id
-  name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                 String      @id
+  name               String
+  email              String      @unique
+  emailVerified      Boolean     @default(false)
+  image              String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
   // Comptes inactifs : avertissement après 3 ans sans connexion, suppression 30 jours plus tard.
-  lastActiveAt       DateTime  @default(now()) // mis à jour à chaque connexion ou renouvellement de session
+  lastActiveAt       DateTime    @default(now()) // mis à jour à chaque connexion ou renouvellement de session
   inactivityWarnedAt DateTime? // date de l'e-mail d'avertissement ; remis à null à la reconnexion
-  sessions      Session[]
-  accounts      Account[]
-  projects      Project[]
+  // Double authentification (application TOTP) : obligatoire pour les droits propriétaire.
+  twoFactorEnabled   Boolean     @default(false)
+  twoFactors         TwoFactor[]
+  sessions           Session[]
+  accounts           Account[]
+  projects           Project[]
 
   @@index([lastActiveAt])
   @@map("user")
@@ -113,9 +116,9 @@ model Verification {
 // ─── Domaine CITE Audit ──────────────────────────────────────────
 
 model Project {
-  id                  String    @id @default(cuid())
+  id                  String            @id @default(cuid())
   userId              String
-  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   companyName         String
   siteUrl             String // URL normalisée https://…
   domain              String // hôte, périmètre du futur crawl
@@ -123,13 +126,13 @@ model Project {
   country             String // ISO 3166-1 alpha-2
   city                String?
   primaryTarget       String
-  competitors         Json      @default("[]") // [{ name, url? }] validé par Zod
-  geoQueries          String[]  @default([])
+  competitors         Json              @default("[]") // [{ name, url? }] validé par Zod
+  geoQueries          String[]          @default([])
   ownershipAttestedAt DateTime
   // Données de démonstration : jamais créées depuis l'interface, uniquement par le seed.
-  isDemo              Boolean   @default(false)
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  isDemo              Boolean           @default(false)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
   audits              Audit[]
   aiRuns              AiVisibilityRun[]
 
@@ -140,18 +143,18 @@ model Project {
 }
 
 model Audit {
-  id              String          @id @default(cuid())
+  id              String         @id @default(cuid())
   projectId       String
   // Toujours égal au isDemo du projet, garanti par la clé étrangère composite :
   // un audit réel ne peut pas être rattaché à un projet de démonstration, et inversement.
-  isDemo          Boolean         @default(false)
-  project         Project         @relation(fields: [projectId, isDemo], references: [id, isDemo], onDelete: Cascade, onUpdate: Cascade)
-  status          AuditStatus     @default(QUEUED)
+  isDemo          Boolean        @default(false)
+  project         Project        @relation(fields: [projectId, isDemo], references: [id, isDemo], onDelete: Cascade, onUpdate: Cascade)
+  status          AuditStatus    @default(QUEUED)
   scoringVersion  String
-  attempts        Int             @default(0)
+  attempts        Int            @default(0)
   lockedAt        DateTime? // posé par le worker à la prise en charge, renouvelé à chaque progression
   progress        Json? // { phase, pagesDone, pagesTotal } pour l'affichage pendant l'audit
-  queuedAt        DateTime        @default(now())
+  queuedAt        DateTime       @default(now())
   startedAt       DateTime?
   finishedAt      DateTime?
   // Résultats : null tant que l'audit n'a pas réellement été calculé.
@@ -245,13 +248,13 @@ model AiVisibilityRun {
 
 /// Une requête envoyée à une IA et sa réponse, conservée sans modification.
 model AiQueryResult {
-  id                   String         @id @default(cuid())
+  id                   String          @id @default(cuid())
   runId                String
   run                  AiVisibilityRun @relation(fields: [runId], references: [id], onDelete: Cascade)
   position             Int // ordre dans le lancement
   query                String // requête originale, telle que saisie
-  status               AiQueryStatus  @default(PENDING)
-  attempts             Int            @default(0)
+  status               AiQueryStatus   @default(PENDING)
+  attempts             Int             @default(0)
   provider             AiProviderKind
   requestedModel       String
   model                String? // identifiant renvoyé par l'API
@@ -259,7 +262,7 @@ model AiQueryResult {
   latencyMs            Int?
   rawResponse          String? // texte brut, jamais modifié
   rawPayload           Json? // réponse JSON complète, jamais modifiée
-  sources              Json           @default("[]") // [{ url, title?, origin: API | TEXT }]
+  sources              Json            @default("[]") // [{ url, title?, origin: API | TEXT }]
   brandDetected        String? // terme trouvé (nom, alias, domaine)
   brandMentioned       Boolean?
   brandCited           Boolean? // une source renvoyée pointe vers le site de la marque
@@ -267,7 +270,7 @@ model AiQueryResult {
   approxPosition       Int?
   positionRatio        Float?
   brandExcerpt         String?
-  competitorsMentioned Json           @default("[]")
+  competitorsMentioned Json            @default("[]")
   confidence           Float?
   usage                Json?
   costUsd              Float?
@@ -299,4 +302,22 @@ model ActionLimit {
   windowStart DateTime
 
   @@index([windowStart])
+}
+
+/// Double authentification (plugin Better Auth « two-factor »).
+/// Le secret TOTP et les codes de secours sont chiffrés par Better Auth avec BETTER_AUTH_SECRET.
+/// Supprimés avec le compte, ou à la désactivation de la double authentification.
+model TwoFactor {
+  id                      String    @id
+  secret                  String
+  backupCodes             String
+  userId                  String
+  verified                Boolean   @default(true)
+  failedVerificationCount Int       @default(0)
+  lockedUntil             DateTime?
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([secret])
+  @@index([userId])
+  @@map("twoFactor")
 }

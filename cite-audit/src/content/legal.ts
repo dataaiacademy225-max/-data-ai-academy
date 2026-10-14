@@ -99,6 +99,7 @@ export function legalPages(params: LegalParams): Record<LegalSlug, LegalPage> {
           paragraphs: ["Nous collectons uniquement ce qui est nécessaire au service :"],
           list: [
             "Compte : nom, adresse e-mail, mot de passe (enregistré sous forme chiffrée irréversible, jamais en clair), confirmation de l'adresse.",
+            "Double authentification (si vous l'activez) : clé secrète de l'application d'authentification et codes de secours, enregistrés chiffrés.",
             "Sessions de connexion : adresse IP et navigateur utilisés, pour sécuriser votre compte.",
             "Projets : nom de l'entreprise, adresse du site, secteur, pays, ville, cible, concurrents et requêtes que vous saisissez.",
             "Résultats d'audit : informations publiques relevées sur les pages analysées (titres, textes, liens, extraits). Ces pages peuvent contenir des coordonnées publiées par le site lui-même.",
@@ -130,6 +131,7 @@ export function legalPages(params: LegalParams): Record<LegalSlug, LegalPage> {
             historyRetention("Audits", params.auditRetentionDays, "le dernier audit de chaque projet est toujours gardé."),
             historyRetention("Mesures de visibilité IA et réponses reçues", params.aiRunRetentionDays, "la dernière mesure de chaque projet est toujours gardée."),
             "Sessions de connexion : 7 jours au plus. Lien de changement de mot de passe : 1 heure. Lien de confirmation d'adresse : 24 heures.",
+            "Double authentification : clé et codes de secours conservés jusqu'à sa désactivation ou la suppression du compte. Vérification du code après le mot de passe : 10 minutes au plus.",
             "Compteurs de tentatives : 24 heures au plus.",
           ],
         },
@@ -153,7 +155,7 @@ export function legalPages(params: LegalParams): Record<LegalSlug, LegalPage> {
         {
           title: "Cookies",
           paragraphs: [
-            `${APP_NAME} utilise uniquement un cookie de session, strictement nécessaire pour vous garder connecté. Aucun cookie publicitaire ni de mesure d'audience n'est utilisé ; aucun consentement n'est donc demandé.`,
+            `${APP_NAME} utilise uniquement des cookies strictement nécessaires : le cookie de session, qui vous garde connecté, et, si la double authentification est active, un cookie temporaire (10 minutes) entre le mot de passe et le code. Aucun cookie publicitaire ni de mesure d'audience n'est utilisé ; aucun consentement n'est donc demandé.`,
           ],
         },
         {

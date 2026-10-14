@@ -43,8 +43,11 @@ export async function signInAction(_prev: AuthFormState, formData: FormData): Pr
     }
   }
 
+  let needsSecondFactor = false;
   try {
-    await getAuth().api.signInEmail({ body: parsed.data, headers: requestHeaders });
+    const result = await getAuth().api.signInEmail({ body: parsed.data, headers: requestHeaders });
+    // Double authentification active : aucune session n'est encore ouverte, le code est demandé à l'étape suivante.
+    needsSecondFactor = "twoFactorRedirect" in result && result.twoFactorRedirect === true;
   } catch (error) {
     if (isAPIError(error)) {
       // Message volontairement identique que l'e-mail existe ou non.
@@ -54,7 +57,7 @@ export async function signInAction(_prev: AuthFormState, formData: FormData): Pr
     return { error: "Connexion impossible pour le moment. Réessayez.", values: { email: raw.email } };
   }
   await resetLimit(emailKey);
-  redirect("/dashboard");
+  redirect(needsSecondFactor ? "/login/double-authentification" : "/dashboard");
 }
 
 export async function signUpAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {

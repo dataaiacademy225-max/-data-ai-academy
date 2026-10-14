@@ -19,6 +19,10 @@ export const LIMITS = {
   passwordResetPerIp: { max: 10, windowMs: 60 * 60_000 },
   passwordResetPerEmail: { max: 3, windowMs: 60 * 60_000 },
   verificationEmailPerUser: { max: 3, windowMs: 60 * 60_000 },
+  // Saisie du code de double authentification à la connexion (Better Auth verrouille aussi le compte après 10 échecs).
+  twoFactorPerIp: { max: 20, windowMs: 15 * 60_000 },
+  // Activation, désactivation, nouveaux codes de secours : chaque tentative revérifie le mot de passe.
+  twoFactorSettingsPerUser: { max: 10, windowMs: 15 * 60_000 },
 } as const satisfies Record<string, LimitRule>;
 
 /** Empreinte de la clé : aucune donnée personnelle (e-mail, IP) n'est stockée en clair. */

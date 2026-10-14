@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { isOwner } from "@/lib/access";
+import { isDesignatedOwner, isOwner } from "@/lib/access";
 import { requireUser } from "@/lib/session";
 import { signOutAction } from "@/server/actions/auth";
 import { resendVerificationEmailAction } from "@/server/actions/password";
@@ -37,6 +37,17 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         </div>
       </header>
       {!user.emailVerified && <VerifyEmailBanner action={resendVerificationEmailAction} />}
+      {isDesignatedOwner(user) && !user.twoFactorEnabled && (
+        <div role="status" className="border-b border-border bg-accent/10">
+          <p className="mx-auto max-w-5xl px-4 py-2 text-sm">
+            <span aria-hidden="true">🔐 </span>
+            Compte propriétaire : activez la double authentification pour débloquer les audits illimités.{" "}
+            <Link className="font-medium underline" href="/settings/account#double-authentification">
+              Activer maintenant
+            </Link>
+          </p>
+        </div>
+      )}
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
       <footer className="border-t border-border py-4 text-center text-xs text-muted-foreground">
         Le score CITE est un indicateur interne Data &amp; AI Academy, basé sur des signaux observables. Ce

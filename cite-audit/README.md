@@ -93,7 +93,7 @@ Pour un usage personnel ou une bêta, sans frais :
 - **Render** (offre gratuite) : un seul service web, défini par `render.yaml` à la racine du dépôt. Le worker tourne dans l'application (`RUN_WORKER_IN_WEB=true`) ; les migrations s'appliquent au démarrage.
 - **Neon** (offre gratuite) : la base PostgreSQL. Utiliser l'URL « direct » (sans `-pooler`).
 - Limites : le service s'endort après 15 min sans visite (réveil d'environ 1 min) ; les tâches quotidiennes ne tournent que lorsqu'il est éveillé. Pour des clients payants, passer à une offre payante avec un worker séparé (`pnpm worker`).
-- Accès : `SIGNUP_MODE=invite` (défaut) et `OWNER_EMAILS` ; le compte propriétaire n'a pas de limite d'audits par jour une fois son adresse confirmée, ce qui exige un envoi d'e-mails réel (`SMTP_URL`).
+- Accès : `SIGNUP_MODE=invite` (défaut) et `OWNER_EMAILS` ; le compte propriétaire n'a pas de limite d'audits par jour une fois son adresse confirmée (ce qui exige un envoi d'e-mails réel, `SMTP_URL`) et la double authentification activée dans « Mon compte ».
 
 ## Commandes
 
