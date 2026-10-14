@@ -1,41 +1,41 @@
 @import "tailwindcss";
 
-/* Charte Data & AI Academy : bleu nuit + accent orange. Jetons au format shadcn/ui. */
+/* Charte Data & AI Academy : bleu nuit + accent orange, gris zinc (shadcn/ui). Jetons au format shadcn/ui. */
 :root {
-  --background: #f7f8fb;
-  --foreground: #0b1526;
+  --background: #fafafa; /* zinc-50 */
+  --foreground: #09090b; /* zinc-950 */
   --card: #ffffff;
-  --card-foreground: #0b1526;
-  --muted: #eef1f6;
-  --muted-foreground: #5b6578;
+  --card-foreground: #09090b;
+  --muted: #f4f4f5; /* zinc-100 */
+  --muted-foreground: #71717b; /* zinc-500 */
   --primary: #0b1526;
   --primary-foreground: #ffffff;
   --accent: #ff7a29;
   --accent-foreground: #0b1526;
   --destructive: #c62828;
   --destructive-foreground: #ffffff;
-  --border: #dde2ea;
-  --input: #cfd6e1;
+  --border: #e4e4e7; /* zinc-200 */
+  --input: #d4d4d8; /* zinc-300 */
   --ring: #ff7a29;
   --radius: 0.625rem;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #060b15;
-    --foreground: #e8ecf3;
-    --card: #0b1526;
-    --card-foreground: #e8ecf3;
-    --muted: #13213a;
-    --muted-foreground: #9aa6ba;
+    --background: #09090b; /* zinc-950 */
+    --foreground: #fafafa; /* zinc-50 */
+    --card: #18181b; /* zinc-900 */
+    --card-foreground: #fafafa;
+    --muted: #27272a; /* zinc-800 */
+    --muted-foreground: #9f9fa9; /* zinc-400 */
     --primary: #ff7a29;
     --primary-foreground: #0b1526;
     --accent: #ff7a29;
     --accent-foreground: #0b1526;
     --destructive: #ef5350;
     --destructive-foreground: #0b1526;
-    --border: #1b3155;
-    --input: #26406b;
+    --border: #27272a; /* zinc-800 */
+    --input: #3f3f46; /* zinc-700 */
     --ring: #ff7a29;
   }
 }
