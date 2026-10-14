@@ -110,6 +110,7 @@ Tests (`cite-audit/tests`) : `unit/` (pur, crawler sur serveur local), `integrat
   - crawl : 15 pages, 0,5 s entre deux pages, 2 min 30 au plus ;
   - tentatives (connexion, double authentification, inscription, mot de passe oublié, suppression de compte) : `services/rate-limit.ts`, en base, clés hachées. Les server actions appellent Better Auth directement et contournent sa propre limite HTTP : toute nouvelle action sensible doit appeler `consumeLimit`.
 - **En-têtes** : CSP stricte avec nonce (aucun script en ligne ni `eval` en production), HSTS, `frame-ancestors 'none'`. Ne pas ajouter de ressource externe sans adapter `lib/csp.ts`.
+- **Sauvegardes** : copie chiffrée (AES-256) de la base chaque nuit par GitHub Actions (`.github/workflows/db-backup.yml`), conservée 30 jours ; restauration dans une base neuve uniquement (`db-restore.yml`). Procédure : `cite-audit/docs/BACKUP.md`.
 - **Conservation** : purge quotidienne par le worker (`services/retention.ts`, `AUDIT_RETENTION_DAYS`, `AI_RUN_RETENTION_DAYS`, 0 = tant que le projet existe). Comptes inactifs (`services/inactive-accounts.ts`) : e-mail après 3 ans sans connexion, suppression 30 jours plus tard ; jamais de suppression si l'e-mail n'est pas parti. Toute nouvelle donnée stockée doit avoir une durée et figurer dans `content/legal.ts`.
 - **Tests** : jamais d'accès Internet. Crawler via `tests/helpers/test-site.ts`, fournisseur IA simulé, horloge simulée.
 

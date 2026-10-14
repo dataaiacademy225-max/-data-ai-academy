@@ -133,6 +133,7 @@ export function legalPages(params: LegalParams): Record<LegalSlug, LegalPage> {
             "Sessions de connexion : 7 jours au plus. Lien de changement de mot de passe : 1 heure. Lien de confirmation d'adresse : 24 heures.",
             "Double authentification : clé et codes de secours conservés jusqu'à sa désactivation ou la suppression du compte. Vérification du code après le mot de passe : 10 minutes au plus.",
             "Compteurs de tentatives : 24 heures au plus.",
+            "Copies de sauvegarde de la base, chiffrées : 30 jours, puis suppression automatique. Une donnée que vous supprimez peut donc subsister jusqu'à 30 jours dans ces copies, sans être utilisée.",
           ],
         },
         {
@@ -141,6 +142,7 @@ export function legalPages(params: LegalParams): Record<LegalSlug, LegalPage> {
           list: [
             `Hébergement de l'application et de la base de données : ${e.host}.`,
             `Envoi des e-mails : ${e.emailProvider}.`,
+            "Copies de sauvegarde chiffrées : GitHub (GitHub, Inc., filiale de Microsoft, États-Unis). Le fichier est chiffré avant d'être déposé ; GitHub ne peut pas le lire.",
             "Module facultatif de visibilité IA : les requêtes saisies sont envoyées à Perplexity AI (États-Unis), uniquement quand vous lancez une mesure et après avoir accepté son coût estimé. Aucune autre donnée de votre compte n'est transmise.",
           ],
         },
