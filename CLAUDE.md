@@ -22,7 +22,7 @@ Conception de référence : `cite-audit/docs/ARCHITECTURE.md`. Installation dét
 | Application | Next.js 16 App Router, React 19, TypeScript strict. `cacheComponents` désactivé. |
 | UI | Tailwind CSS 4. Composants au format shadcn/ui écrits à la main dans `src/components/ui` (le registre shadcn n'est pas joignable depuis l'environnement cloud). |
 | Données | PostgreSQL 16, Prisma 7 (client généré dans `src/generated/prisma`, adaptateur `@prisma/adapter-pg`, config `prisma.config.ts`). |
-| Auth | Better Auth (e-mail + mot de passe, sessions en base). |
+| Auth | Better Auth (e-mail + mot de passe, sessions en base, double authentification TOTP par le plugin `two-factor`). |
 | Validation | Zod 4 (schémas partagés client/serveur). |
 | Crawler | undici 7 (HTTP, compatible Node ≥ 20.18), cheerio, robots-parser. |
 | Tâches longues | Worker Node séparé + file d'attente PostgreSQL (`FOR UPDATE SKIP LOCKED`). Pas de Redis. |
@@ -60,7 +60,7 @@ Migrations : `prisma migrate dev` refuse de tourner en non-interactif dès qu'il
 | `app/api/auth/[...all]` | Point d'entrée Better Auth. |
 | `proxy.ts` | Redirection rapide sans cookie (pas le contrôle d'accès) et CSP avec nonce par requête (`lib/csp.ts`). |
 | `components/ui`, `components/report`, `components/ai-visibility` | Interface. Aucune logique métier. |
-| `lib/` | `env.ts` (variables validées), `db.ts`, `auth.ts`, `session.ts` (`requireUser`), `access.ts` (inscriptions sur invitation, propriétaires), `logger.ts`, `csp.ts`, `client-ip.ts`, `ai-pricing.ts`, `validation/`. |
+| `lib/` | `env.ts` (variables validées), `db.ts`, `auth.ts`, `session.ts` (`requireUser`), `access.ts` (inscriptions sur invitation ; droits propriétaire = adresse dans `OWNER_EMAILS`, confirmée, et double authentification active), `logger.ts`, `csp.ts`, `client-ip.ts`, `ai-pricing.ts`, `validation/`. |
 | `server/actions/` | Server actions : `requireUser()`, validation Zod, appel d'un service. |
 | `server/services/` | Accès aux données, toujours filtré par `userId`. Suppression de projet ou de compte : en cascade en base (`projects.ts`, `account.ts`). Verrous de requête : `locks.ts`. |
 | `server/crawler/` | Collecte : `url-guard` → `robots` → `safe-fetch` → `extract` (`analyzeUrl`), puis `sitemap` + `discover` → `crawl-site`. Ni score ni UI. |
@@ -93,6 +93,7 @@ Tests (`cite-audit/tests`) : `unit/` (pur, crawler sur serveur local), `integrat
 
 - **Secrets** : uniquement en variables d'environnement serveur, validées par Zod (`getServerEnv`, `getAiEnv`). Jamais en base, jamais côté client, jamais dans un journal ou un message d'erreur. Si des clés propres à chaque client sont un jour ajoutées : chiffrement AES-256-GCM avec une clé maître en variable d'environnement, et seuls les 4 derniers caractères affichés.
 - **Autorisation** : vérifiée côté serveur à chaque accès (`requireUser` + filtre `userId`). Une ressource d'autrui renvoie « introuvable ».
+- **Double authentification** : TOTP (application) + 10 codes de secours, secret et codes chiffrés par Better Auth. Après le mot de passe, aucune session n'existe tant que le code n'est pas vérifié (`/login/double-authentification`). Obligatoire pour les droits propriétaire.
 - **Anti-SSRF** : toute requête vers un site audité passe par `safeFetch`, qui :
   - vérifie l'IP au moment de la connexion (DNS rebinding) et à chaque redirection ;
   - bloque les IP privées et réservées, localhost et les domaines internes ;
@@ -107,7 +108,7 @@ Tests (`cite-audit/tests`) : `unit/` (pur, crawler sur serveur local), `integrat
   - audits : 20 par utilisateur sur 24 h, un seul en cours par projet ;
   - IA : `AI_MAX_QUERIES_PER_RUN` et `AI_MAX_QUERIES_PER_DAY` ;
   - crawl : 15 pages, 0,5 s entre deux pages, 2 min 30 au plus ;
-  - tentatives (connexion, inscription, mot de passe oublié, suppression de compte) : `services/rate-limit.ts`, en base, clés hachées. Les server actions appellent Better Auth directement et contournent sa propre limite HTTP : toute nouvelle action sensible doit appeler `consumeLimit`.
+  - tentatives (connexion, double authentification, inscription, mot de passe oublié, suppression de compte) : `services/rate-limit.ts`, en base, clés hachées. Les server actions appellent Better Auth directement et contournent sa propre limite HTTP : toute nouvelle action sensible doit appeler `consumeLimit`.
 - **En-têtes** : CSP stricte avec nonce (aucun script en ligne ni `eval` en production), HSTS, `frame-ancestors 'none'`. Ne pas ajouter de ressource externe sans adapter `lib/csp.ts`.
 - **Conservation** : purge quotidienne par le worker (`services/retention.ts`, `AUDIT_RETENTION_DAYS`, `AI_RUN_RETENTION_DAYS`, 0 = tant que le projet existe). Comptes inactifs (`services/inactive-accounts.ts`) : e-mail après 3 ans sans connexion, suppression 30 jours plus tard ; jamais de suppression si l'e-mail n'est pas parti. Toute nouvelle donnée stockée doit avoir une durée et figurer dans `content/legal.ts`.
 - **Tests** : jamais d'accès Internet. Crawler via `tests/helpers/test-site.ts`, fournisseur IA simulé, horloge simulée.

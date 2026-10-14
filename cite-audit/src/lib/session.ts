@@ -3,14 +3,14 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getAuth } from "@/lib/auth";
 
-export type CurrentUser = { id: string; name: string; email: string; emailVerified: boolean };
+export type CurrentUser = { id: string; name: string; email: string; emailVerified: boolean; twoFactorEnabled: boolean };
 
 /** Utilisateur connecté ou null. Vérification réelle côté serveur (pas seulement la présence du cookie). */
 export async function getCurrentUser(): Promise<CurrentUser | null> {
   const session = await getAuth().api.getSession({ headers: await headers() });
   if (!session) return null;
-  const { id, name, email, emailVerified } = session.user;
-  return { id, name, email, emailVerified };
+  const { id, name, email, emailVerified, twoFactorEnabled } = session.user;
+  return { id, name, email, emailVerified, twoFactorEnabled: twoFactorEnabled === true };
 }
 
 /** À appeler dans toute page, action ou route protégée. */

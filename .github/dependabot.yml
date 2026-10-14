@@ -20,3 +20,8 @@ updates:
     directory: /cite-audit
     schedule:
       interval: monthly
+    ignore:
+      # On reste sur une version LTS de Node : le passage à une nouvelle version majeure se décide à la main
+      # (Node 25 et suivants ne fournissent plus corepack, dont le Dockerfile a besoin).
+      - dependency-name: node
+        update-types: [version-update:semver-major]

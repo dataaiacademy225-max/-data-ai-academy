@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { isOwner, isSignupAllowed } from "@/lib/access";
+import { isDesignatedOwner, isOwner, isSignupAllowed } from "@/lib/access";
 import { getAccessEnv } from "@/lib/env";
 
 const env = (over: Partial<ReturnType<typeof getAccessEnv>> = {}) => ({
@@ -22,10 +22,19 @@ describe("règles d'accès", () => {
     expect(isSignupAllowed("inconnu@exemple.com", env({ SIGNUP_MODE: "open" }))).toBe(true);
   });
 
-  it("propriétaire seulement si l'adresse est déclarée ET confirmée", () => {
-    expect(isOwner({ email: "admin@data-ai-academy.com", emailVerified: true }, env())).toBe(true);
-    expect(isOwner({ email: "admin@data-ai-academy.com", emailVerified: false }, env())).toBe(false);
-    expect(isOwner({ email: "testeur@exemple.com", emailVerified: true }, env())).toBe(false);
+  it("propriétaire désigné seulement si l'adresse est déclarée ET confirmée", () => {
+    const admin = { email: "admin@data-ai-academy.com", emailVerified: true, twoFactorEnabled: false };
+    expect(isDesignatedOwner(admin, env())).toBe(true);
+    expect(isDesignatedOwner({ ...admin, emailVerified: false }, env())).toBe(false);
+    expect(isDesignatedOwner({ ...admin, email: "testeur@exemple.com" }, env())).toBe(false);
+  });
+
+  it("droits propriétaire effectifs seulement avec la double authentification active", () => {
+    const admin = { email: "admin@data-ai-academy.com", emailVerified: true, twoFactorEnabled: true };
+    expect(isOwner(admin, env())).toBe(true);
+    expect(isOwner({ ...admin, twoFactorEnabled: false }, env())).toBe(false);
+    expect(isOwner({ ...admin, emailVerified: false }, env())).toBe(false);
+    expect(isOwner({ ...admin, email: "testeur@exemple.com" }, env())).toBe(false);
   });
 
   it("configuration : invitation par défaut, listes séparées par des virgules et normalisées", () => {

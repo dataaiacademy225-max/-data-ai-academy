@@ -12,10 +12,20 @@ export function isSignupAllowed(email: string, env: AccessEnv = getAccessEnv()):
   return env.OWNER_EMAILS.includes(normalized) || env.SIGNUP_ALLOWED_EMAILS.includes(normalized);
 }
 
+type AccessUser = { email: string; emailVerified: boolean; twoFactorEnabled: boolean };
+
 /**
- * Propriétaire : adresse déclarée dans OWNER_EMAILS ET confirmée par le lien reçu par e-mail.
+ * Compte désigné comme propriétaire : adresse déclarée dans OWNER_EMAILS ET confirmée par le lien reçu par e-mail.
  * Sans la confirmation, quelqu'un qui s'inscrirait le premier avec cette adresse obtiendrait les droits.
  */
-export function isOwner(user: { email: string; emailVerified: boolean }, env: AccessEnv = getAccessEnv()): boolean {
+export function isDesignatedOwner(user: AccessUser, env: AccessEnv = getAccessEnv()): boolean {
   return user.emailVerified && env.OWNER_EMAILS.includes(user.email.trim().toLowerCase());
+}
+
+/**
+ * Droits propriétaire effectifs (pas de limite d'audits par jour) : compte désigné ET double authentification active.
+ * Un mot de passe volé ne suffit donc jamais à obtenir un accès illimité.
+ */
+export function isOwner(user: AccessUser, env: AccessEnv = getAccessEnv()): boolean {
+  return isDesignatedOwner(user, env) && user.twoFactorEnabled;
 }

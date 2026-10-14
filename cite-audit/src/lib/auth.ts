@@ -2,6 +2,8 @@ import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
+import { twoFactor } from "better-auth/plugins/two-factor";
+import { APP_NAME } from "@/lib/brand";
 import { isSignupAllowed } from "@/lib/access";
 import { getServerEnv } from "@/lib/env";
 import { prisma } from "@/lib/db";
@@ -68,8 +70,17 @@ function createAuth() {
         update: { after: async (session) => markUserActive(session.userId) },
       },
     },
-    // nextCookies doit rester le dernier plugin : il pose les cookies depuis les server actions.
-    plugins: [nextCookies()],
+    plugins: [
+      // Double authentification par application (TOTP, code à 6 chiffres) + 10 codes de secours.
+      // Le secret et les codes de secours sont chiffrés en base avec BETTER_AUTH_SECRET.
+      // Après le mot de passe, la session n'est créée qu'une fois le code vérifié (cookie de 10 minutes).
+      twoFactor({
+        issuer: APP_NAME,
+        backupCodeOptions: { amount: 10, storeBackupCodes: "encrypted" },
+      }),
+      // nextCookies doit rester le dernier plugin : il pose les cookies depuis les server actions.
+      nextCookies(),
+    ],
   });
 }
 
