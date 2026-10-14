@@ -51,6 +51,29 @@ jobs:
             echo "::error::RESTORE_DATABASE_URL désigne la base en service : restauration refusée. Créez une nouvelle branche Neon."; exit 1
           fi
 
+      - name: Récupérer le script de nettoyage du lien
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
+      - name: Vérifier que la destination n'est pas la base en service
+        env:
+          RESTORE_DATABASE_URL: ${{ secrets.RESTORE_DATABASE_URL }}
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          umask 077
+          trap 'shred -u "$RUNNER_TEMP"/*.env 2>/dev/null || true' EXIT
+          python3 -I .github/scripts/clean-database-url.py RESTORE_DATABASE_URL "$RUNNER_TEMP/restore.env"
+          # Comparaison des liens nettoyés : un espace ou un paramètre en plus ne suffit pas à contourner le refus.
+          if [ -n "$BACKUP_DATABASE_URL" ]; then
+            python3 -I .github/scripts/clean-database-url.py BACKUP_DATABASE_URL "$RUNNER_TEMP/live.env"
+            if cmp -s "$RUNNER_TEMP/restore.env" "$RUNNER_TEMP/live.env"; then
+              echo "::error::RESTORE_DATABASE_URL désigne la base en service : restauration refusée. Créez une nouvelle branche Neon."; exit 1
+            fi
+          fi
+
       - name: Récupérer la sauvegarde chiffrée
         uses: actions/download-artifact@v4
         with:
@@ -71,7 +94,10 @@ jobs:
           printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --quiet --pinentry-mode loopback --passphrase-fd 0 \
             --decrypt "$file" > backup/restore.dump
           # La base de destination doit être vide : on s'arrête à la première erreur plutôt que de mélanger.
-          docker run --rm -e PGURL="$RESTORE_DATABASE_URL" -v "$PWD/backup:/backup:ro" "$PG_IMAGE" \
+          pgenv="$RUNNER_TEMP/pg.env"
+          trap 'shred -u "$pgenv" 2>/dev/null || true' EXIT
+          python3 -I .github/scripts/clean-database-url.py RESTORE_DATABASE_URL "$pgenv"
+          docker run --rm --env-file "$pgenv" -v "$PWD/backup:/backup:ro" "$PG_IMAGE" \
             sh -c 'pg_restore --no-owner --no-privileges --exit-on-error --dbname="$PGURL" /backup/restore.dump'
           shred -u backup/restore.dump
           echo "Restauration terminée depuis $(basename "$file"). Vérifiez l'application avant de basculer Render sur cette base."

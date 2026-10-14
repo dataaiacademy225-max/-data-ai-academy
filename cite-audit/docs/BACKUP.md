@@ -49,6 +49,9 @@ on vérifie, puis on bascule l'application dessus. La base d'origine reste intac
 
 ## 3. Bon à savoir
 
+- Les liens collés dans les secrets sont nettoyés automatiquement (`.github/scripts/clean-database-url.py`) :
+  espaces, retours à la ligne, guillemets, lien collé deux fois, paramètres en trop (seul `sslmode=require` est gardé).
+  Chaque correction est signalée dans l'exécution, sans jamais afficher le lien.
 - Une donnée supprimée dans l'application (projet, compte) peut subsister jusqu'à 30 jours dans les copies chiffrées,
   puis disparaît avec elles. C'est indiqué dans la politique de confidentialité.
 - Amélioration possible : créer chez Neon un rôle en **lecture seule** réservé aux sauvegardes
