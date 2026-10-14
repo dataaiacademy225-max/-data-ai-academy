@@ -5,7 +5,7 @@ Dépôt de Data & AI Academy :
 - Domaine `data-ai-academy.com` (Namecheap) : GriotCite sera servi sur le sous-domaine `audit.data-ai-academy.com`.
 - `cite-audit/` : SaaS **GriotCite** (ancien nom : CITE Audit ; dossiers et identifiants techniques inchangés). Nom défini dans `src/lib/brand.ts` ; la méthode et le score gardent le nom **CITE**. Toutes les commandes ci-dessous se lancent depuis ce dossier.
 
-Conception de référence : `cite-audit/docs/ARCHITECTURE.md`. Installation détaillée : `cite-audit/README.md`. Tarification et coûts d'API (brouillon non implémenté) : `cite-audit/docs/PRICING.md`.
+Conception de référence : `cite-audit/docs/ARCHITECTURE.md`. Installation détaillée : `cite-audit/README.md`. Tarification et coûts d'API (brouillon non implémenté) : `cite-audit/docs/PRICING.md`. Dossier de sécurité (protections, limites connues) : `cite-audit/docs/SECURITY.md` — le tenir à jour à chaque nouvelle protection.
 
 ## Interdiction absolue : aucune promesse de résultat IA
 
@@ -99,6 +99,7 @@ Tests (`cite-audit/tests`) : `unit/` (pur, crawler sur serveur local), `integrat
   - bloque les IP privées et réservées, localhost et les domaines internes ;
   - n'autorise que les ports 80 et 443 ;
   - applique un délai de 10 s, une taille maximale de 2 Mo et 5 redirections au plus.
+  - décompresse gzip, deflate et brotli (pages et sitemaps `.xml.gz`) avec la même limite de 2 Mo **après** décompression (protection contre les bombes de compression).
   
   La politique de production `defaultNetworkPolicy` n'est jamais affaiblie.
 - **robots.txt** est respecté pour chaque page et chaque redirection. S'il répond en erreur 5xx, on s'abstient.
@@ -110,6 +111,7 @@ Tests (`cite-audit/tests`) : `unit/` (pur, crawler sur serveur local), `integrat
   - crawl : 15 pages, 0,5 s entre deux pages, 2 min 30 au plus ;
   - tentatives (connexion, double authentification, inscription, mot de passe oublié, suppression de compte) : `services/rate-limit.ts`, en base, clés hachées. Les server actions appellent Better Auth directement et contournent sa propre limite HTTP : toute nouvelle action sensible doit appeler `consumeLimit`.
 - **En-têtes** : CSP stricte avec nonce (aucun script en ligne ni `eval` en production), HSTS, `frame-ancestors 'none'`. Ne pas ajouter de ressource externe sans adapter `lib/csp.ts`.
+- **Sauvegardes** : copie chiffrée (AES-256) de la base chaque nuit par GitHub Actions (`.github/workflows/db-backup.yml`), conservée 30 jours ; restauration dans une base neuve uniquement (`db-restore.yml`). Procédure : `cite-audit/docs/BACKUP.md`.
 - **Conservation** : purge quotidienne par le worker (`services/retention.ts`, `AUDIT_RETENTION_DAYS`, `AI_RUN_RETENTION_DAYS`, 0 = tant que le projet existe). Comptes inactifs (`services/inactive-accounts.ts`) : e-mail après 3 ans sans connexion, suppression 30 jours plus tard ; jamais de suppression si l'e-mail n'est pas parti. Toute nouvelle donnée stockée doit avoir une durée et figurer dans `content/legal.ts`.
 - **Tests** : jamais d'accès Internet. Crawler via `tests/helpers/test-site.ts`, fournisseur IA simulé, horloge simulée.
 
@@ -138,7 +140,7 @@ Tests (`cite-audit/tests`) : `unit/` (pur, crawler sur serveur local), `integrat
 - **Avertissement obligatoire** (`AI_WARNING`) partout où un résultat IA s'affiche ; toujours parler d'un « échantillon ». Les réponses par API peuvent différer des applications grand public.
 - **Coût** : estimé avant lancement et accepté explicitement. C'est une fourchette indicative (tarifs publics d'octobre 2026, `src/lib/ai-pricing.ts`) ; le coût réel de l'API prime.
 - **API Perplexity** : Sonar Chat Completions n'est plus officiellement supporté depuis le 27/09/2026. L'adaptateur cible l'Agent API, dont le format de réponse n'a été vérifié que par des sources tierces. Le JSON complet est conservé ; vérifier le premier appel réel avant tout usage client.
-- **Pas encore implémenté** : indice de signaux GEO séparé, plans d'action à 30/90 jours, mesure de vitesse (PageSpeed), lecture des sitemaps `.xml.gz`, rendu JavaScript, recherche de mentions externes (LinkedIn, annuaires). Tant qu'ils n'existent pas, ces éléments restent « non vérifiés » et n'apparaissent pas comme mesurés.
+- **Pas encore implémenté** : indice de signaux GEO séparé, plans d'action à 30/90 jours, mesure de vitesse (PageSpeed), rendu JavaScript, recherche de mentions externes (LinkedIn, annuaires). Tant qu'ils n'existent pas, ces éléments restent « non vérifiés » et n'apparaissent pas comme mesurés.
 
 ## Charte
 

@@ -1,0 +1,98 @@
+# Sauvegarde quotidienne de la base PostgreSQL de GriotCite (Neon).
+# Copie complète (pg_dump), chiffrée (AES-256, phrase secrète connue du seul propriétaire),
+# vérifiée, puis conservée 30 jours comme artefact GitHub. Restauration : cite-audit/docs/BACKUP.md.
+#
+# Secrets à créer dans GitHub (Settings → Secrets and variables → Actions) :
+#   BACKUP_DATABASE_URL  lien PostgreSQL de la base (le même que DATABASE_URL sur Render)
+#   BACKUP_PASSPHRASE    phrase secrète de chiffrement (24 caractères au moins), à garder hors de GitHub
+# Le dépôt étant public, les artefacts sont téléchargeables : seule la copie chiffrée y est déposée.
+name: Sauvegarde de la base
+
+on:
+  schedule:
+    - cron: "17 3 * * *" # chaque nuit vers 3 h 17 (UTC = heure d'Abidjan)
+  workflow_dispatch: # bouton « Run workflow » pour une sauvegarde à la demande
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # pg_dump de la même version majeure (ou plus récente) que le serveur : la 18 lit les bases 13 à 18.
+      PG_IMAGE: postgres:18-alpine
+    steps:
+      - name: Vérifier la configuration
+        id: config
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$BACKUP_DATABASE_URL" ] && [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::warning title=Sauvegarde non configurée::Ajoutez les secrets BACKUP_DATABASE_URL et BACKUP_PASSPHRASE (voir cite-audit/docs/BACKUP.md). Aucune copie n'a été faite."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ -z "$BACKUP_DATABASE_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error title=Configuration incomplète::Les deux secrets BACKUP_DATABASE_URL et BACKUP_PASSPHRASE sont nécessaires."
+            exit 1
+          fi
+          if [ "${#BACKUP_PASSPHRASE}" -lt 24 ]; then
+            echo "::error title=Phrase secrète trop courte::BACKUP_PASSPHRASE doit compter au moins 24 caractères."
+            exit 1
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+
+      - name: Copier la base et chiffrer la copie
+        if: steps.config.outputs.enabled == 'true'
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          umask 077
+          stamp="$(date -u +%Y-%m-%d_%H%M)"
+          echo "BACKUP_NAME=griotcite-db-${stamp}" >> "$GITHUB_ENV"
+          mkdir -p backup
+          # Format « custom » : compressé, restaurable table par table. Le lien n'est jamais affiché.
+          docker run --rm -e PGURL="$BACKUP_DATABASE_URL" "$PG_IMAGE" \
+            sh -c 'pg_dump --format=custom --no-owner --no-privileges --dbname="$PGURL"' > backup/db.dump
+          test -s backup/db.dump
+          # Chiffrement symétrique AES-256 ; la phrase secrète passe par l'entrée standard, jamais par la ligne de commande.
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --quiet --pinentry-mode loopback --passphrase-fd 0 \
+            --symmetric --cipher-algo AES256 --s2k-digest-algo SHA512 --s2k-count 65011712 \
+            --output "backup/griotcite-db-${stamp}.dump.gpg" backup/db.dump
+          shred -u backup/db.dump
+
+      - name: Vérifier que la copie chiffrée se relit
+        if: steps.config.outputs.enabled == 'true'
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --quiet --pinentry-mode loopback --passphrase-fd 0 \
+            --decrypt "backup/${BACKUP_NAME}.dump.gpg" > backup/check.dump
+          tables=$(docker run --rm -v "$PWD/backup:/backup:ro" "$PG_IMAGE" pg_restore --list /backup/check.dump | grep -c " TABLE DATA " || true)
+          shred -u backup/check.dump
+          if [ "$tables" -lt 5 ]; then
+            echo "::error title=Copie incomplète::Seulement ${tables} tables trouvées dans la copie."
+            exit 1
+          fi
+          echo "Copie relue : ${tables} tables, $(du -h "backup/${BACKUP_NAME}.dump.gpg" | cut -f1) chiffrés."
+
+      - name: Conserver la copie chiffrée (30 jours)
+        if: steps.config.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BACKUP_NAME }}
+          path: backup/${{ env.BACKUP_NAME }}.dump.gpg
+          retention-days: 30
+          if-no-files-found: error
+          compression-level: 0 # déjà compressé et chiffré

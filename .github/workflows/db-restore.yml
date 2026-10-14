@@ -1,0 +1,77 @@
+# Restauration d'une sauvegarde de GriotCite, à la demande (bouton « Run workflow »).
+# Par sécurité, la copie est restaurée dans une AUTRE base (par exemple une nouvelle branche Neon),
+# jamais directement dans la base en service. On bascule ensuite Render sur cette base si tout est correct.
+# Procédure complète : cite-audit/docs/BACKUP.md.
+#
+# Secrets nécessaires :
+#   BACKUP_PASSPHRASE        la phrase secrète utilisée pour chiffrer les sauvegardes
+#   RESTORE_DATABASE_URL     lien PostgreSQL de la base VIDE qui recevra la copie
+#   BACKUP_DATABASE_URL      base en service (sert uniquement à refuser une restauration par-dessus)
+name: Restauration de la base
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup_run_id:
+        description: "Numéro de l'exécution « Sauvegarde de la base » à restaurer (dans son adresse : …/actions/runs/NUMÉRO)"
+        required: true
+      confirmation:
+        description: "Tapez RESTAURER pour confirmer"
+        required: true
+
+permissions:
+  contents: read
+  actions: read # lire l'artefact d'une autre exécution
+
+concurrency:
+  group: db-restore
+  cancel-in-progress: false
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PG_IMAGE: postgres:18-alpine
+    steps:
+      - name: Vérifier la demande
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+          RUN_ID: ${{ inputs.backup_run_id }}
+          RESTORE_DATABASE_URL: ${{ secrets.RESTORE_DATABASE_URL }}
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ "$CONFIRMATION" != "RESTAURER" ]; then echo "::error::Confirmation absente : tapez RESTAURER."; exit 1; fi
+          if ! printf '%s' "$RUN_ID" | grep -Eq '^[0-9]+$'; then echo "::error::Le numéro d'exécution ne contient que des chiffres."; exit 1; fi
+          if [ -z "$RESTORE_DATABASE_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::Secrets RESTORE_DATABASE_URL et BACKUP_PASSPHRASE requis (voir cite-audit/docs/BACKUP.md)."; exit 1
+          fi
+          if [ "$RESTORE_DATABASE_URL" = "$BACKUP_DATABASE_URL" ]; then
+            echo "::error::RESTORE_DATABASE_URL désigne la base en service : restauration refusée. Créez une nouvelle branche Neon."; exit 1
+          fi
+
+      - name: Récupérer la sauvegarde chiffrée
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.backup_run_id }}
+          github-token: ${{ github.token }}
+          pattern: griotcite-db-*
+          path: backup
+          merge-multiple: true
+
+      - name: Déchiffrer et restaurer dans la base de destination
+        env:
+          RESTORE_DATABASE_URL: ${{ secrets.RESTORE_DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          umask 077
+          file=$(ls backup/*.dump.gpg | head -n 1)
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --quiet --pinentry-mode loopback --passphrase-fd 0 \
+            --decrypt "$file" > backup/restore.dump
+          # La base de destination doit être vide : on s'arrête à la première erreur plutôt que de mélanger.
+          docker run --rm -e PGURL="$RESTORE_DATABASE_URL" -v "$PWD/backup:/backup:ro" "$PG_IMAGE" \
+            sh -c 'pg_restore --no-owner --no-privileges --exit-on-error --dbname="$PGURL" /backup/restore.dump'
+          shred -u backup/restore.dump
+          echo "Restauration terminée depuis $(basename "$file"). Vérifiez l'application avant de basculer Render sur cette base."

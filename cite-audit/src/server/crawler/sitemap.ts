@@ -26,7 +26,8 @@ const hostKey = (host: string) => host.toLowerCase().replace(/^www\./, "");
 
 /**
  * Récupère le plan du site : adresses déclarées dans robots.txt, sinon /sitemap.xml.
- * Renvoie null si rien n'a pu être vérifié (réseau, format compressé non lu) : jamais « absent » par défaut.
+ * Les fichiers compressés (.xml.gz) sont décompressés par safeFetch, taille plafonnée.
+ * Renvoie null si rien n'a pu être vérifié (réseau, fichier illisible) : jamais « absent » par défaut.
  */
 export async function fetchSitemap(
   siteUrl: URL,
@@ -47,10 +48,6 @@ export async function fetchSitemap(
     const next = queue.shift()!;
     if (seen.has(next)) continue;
     seen.add(next);
-    if (/\.gz($|\?)/i.test(next)) {
-      notFoundOnly = false; // existe peut-être, mais format compressé non lu dans cette version
-      continue;
-    }
     let target: URL;
     try {
       target = new URL(next);

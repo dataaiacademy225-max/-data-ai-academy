@@ -210,3 +210,29 @@ describe("safeFetch", () => {
     expect(result.ok && result.value.status).toBe(200);
   });
 });
+
+describe("pages compressées", () => {
+  it.each(["/compresse-gzip", "/compresse-br"])("décompresse %s et analyse la page normalement", async (path) => {
+    const fetched = await safeFetch(site.url("site-test.com", path), { policy: site.policy });
+    expect(fetched.ok && fetched.value.body).toContain("<h1");
+    const analyzed = await analyze(site.url("site-test.com", path));
+    expect(analyzed.ok).toBe(true);
+  });
+
+  it("bombe de compression : arrêtée à la limite de taille décompressée → TOO_LARGE", async () => {
+    const fetched = await safeFetch(site.url("site-test.com", "/bombe"), { policy: site.policy });
+    expect(!fetched.ok && fetched.error.code).toBe("TOO_LARGE");
+  });
+
+  it("format de compression inconnu ou corrompu → NETWORK_ERROR, sans planter", async () => {
+    for (const path of ["/encodage-inconnu", "/compresse-corrompu"]) {
+      const fetched = await safeFetch(site.url("site-test.com", path), { policy: site.policy });
+      expect(!fetched.ok && fetched.error.code, path).toBe("NETWORK_ERROR");
+    }
+  });
+
+  it("fichier .xml.gz : décompressé (sitemap compressé)", async () => {
+    const fetched = await safeFetch(site.url("site-test.com", "/sitemap.xml.gz"), { policy: site.policy });
+    expect(fetched.ok && fetched.value.body).toContain("<urlset>");
+  });
+});
