@@ -49,6 +49,13 @@ jobs:
           fi
           echo "enabled=true" >> "$GITHUB_OUTPUT"
 
+      - name: Récupérer le script de nettoyage du lien
+        if: steps.config.outputs.enabled == 'true'
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
       - name: Copier la base et chiffrer la copie
         if: steps.config.outputs.enabled == 'true'
         env:
@@ -60,8 +67,12 @@ jobs:
           stamp="$(date -u +%Y-%m-%d_%H%M)"
           echo "BACKUP_NAME=griotcite-db-${stamp}" >> "$GITHUB_ENV"
           mkdir -p backup
-          # Format « custom » : compressé, restaurable table par table. Le lien n'est jamais affiché.
-          docker run --rm -e PGURL="$BACKUP_DATABASE_URL" "$PG_IMAGE" \
+          # Lien nettoyé des erreurs de collage (espaces, lien collé deux fois…), jamais affiché.
+          pgenv="$RUNNER_TEMP/pg.env"
+          trap 'shred -u "$pgenv" 2>/dev/null || true' EXIT
+          python3 -I .github/scripts/clean-database-url.py BACKUP_DATABASE_URL "$pgenv"
+          # Format « custom » : compressé, restaurable table par table.
+          docker run --rm --env-file "$pgenv" "$PG_IMAGE" \
             sh -c 'pg_dump --format=custom --no-owner --no-privileges --dbname="$PGURL"' > backup/db.dump
           test -s backup/db.dump
           # Chiffrement symétrique AES-256 ; la phrase secrète passe par l'entrée standard, jamais par la ligne de commande.
