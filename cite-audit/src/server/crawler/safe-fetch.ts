@@ -1,5 +1,7 @@
 import "server-only";
 import { promises as dns, type LookupAddress, type LookupOptions } from "node:dns";
+import { promisify } from "node:util";
+import { brotliDecompress, gunzip, inflate } from "node:zlib";
 import { Agent, request } from "undici";
 import { isPublicAddress } from "@/server/crawler/ip-policy";
 import type {
@@ -89,10 +91,49 @@ function mapError(err: unknown, url: URL, timedOut: boolean): Result<never> {
   if (code === "CITE_BLOCKED_PRIVATE") {
     return error("BLOCKED_PRIVATE", "Le domaine pointe vers une adresse privée, locale ou réservée.", url);
   }
+  if (code === "CITE_BAD_ENCODING") {
+    return error("NETWORK_ERROR", "Réponse compressée illisible.", url);
+  }
   if (code === "CITE_DNS_ERROR" || code === "ENOTFOUND" || code === "EAI_AGAIN") {
     return error("DNS_ERROR", "Nom de domaine introuvable.", url);
   }
   return error("NETWORK_ERROR", "Connexion au site impossible.", url);
+}
+
+const DECOMPRESSORS = {
+  gzip: promisify(gunzip),
+  deflate: promisify(inflate),
+  br: promisify(brotliDecompress),
+} as const;
+
+type Encoding = keyof typeof DECOMPRESSORS;
+
+/** Encodage de transfert annoncé (Content-Encoding) : null = non compressé, "unsupported" = format inconnu. */
+export function contentEncoding(header: string | string[] | undefined): Encoding | null | "unsupported" {
+  const value = (Array.isArray(header) ? header.join(",") : (header ?? "")).trim().toLowerCase();
+  if (!value || value === "identity") return null;
+  if (value === "gzip" || value === "x-gzip") return "gzip";
+  if (value === "deflate" || value === "br") return value;
+  return "unsupported";
+}
+
+/** Fichier lui-même compressé (sitemap.xml.gz…) : en-tête gzip + type ou extension gzip. */
+export function isGzipFile(bytes: Uint8Array, contentType: string | null, url: URL): boolean {
+  const magic = bytes.length > 2 && bytes[0] === 0x1f && bytes[1] === 0x8b;
+  return magic && (/gzip/i.test(contentType ?? "") || /\.gz$/i.test(url.pathname));
+}
+
+/**
+ * Décompression plafonnée : la taille DÉCOMPRESSÉE est limitée à maxBytes (protection contre les « bombes »
+ * de compression, quelques Ko qui se déploient en Go). Renvoie null si la limite est dépassée.
+ */
+export async function decompressCapped(bytes: Buffer, encoding: Encoding, maxBytes: number): Promise<Buffer | null> {
+  try {
+    return await DECOMPRESSORS[encoding](bytes, { maxOutputLength: maxBytes });
+  } catch (err) {
+    if ((err as { code?: string }).code === "ERR_BUFFER_TOO_LARGE") return null;
+    throw Object.assign(new Error("Réponse compressée illisible."), { code: "CITE_BAD_ENCODING" });
+  }
 }
 
 /** Décode le corps selon le charset annoncé (en-tête, puis balise meta), UTF-8 par défaut. */
@@ -158,6 +199,8 @@ export async function safeFetch(rawUrl: string | URL, options: SafeFetchOptions 
           "user-agent": USER_AGENT,
           accept: options.accept ?? "text/html,application/xhtml+xml;q=0.9,*/*;q=0.1",
           "accept-language": "fr,en;q=0.8",
+          // Formats de compression lus ci-dessous ; la taille décompressée reste plafonnée.
+          "accept-encoding": "gzip, deflate, br",
         },
       });
 
@@ -186,6 +229,11 @@ export async function safeFetch(rawUrl: string | URL, options: SafeFetchOptions 
       }
 
       const contentType = typeof res.headers["content-type"] === "string" ? res.headers["content-type"] : null;
+      const encoding = contentEncoding(res.headers["content-encoding"]);
+      if (encoding === "unsupported") {
+        discard(res.body);
+        return error("NETWORK_ERROR", "Format de compression non pris en charge.", current);
+      }
       const declared = Number(res.headers["content-length"]);
       if (Number.isFinite(declared) && declared > limits.maxBytes) {
         discard(res.body);
@@ -203,6 +251,19 @@ export async function safeFetch(rawUrl: string | URL, options: SafeFetchOptions 
         chunks.push(chunk);
       }
 
+      const tooLarge = () => error("TOO_LARGE", `Page trop volumineuse (plus de ${limits.maxBytes} octets).`, current);
+      let content: Buffer = Buffer.concat(chunks);
+      if (encoding) {
+        const decoded = await decompressCapped(content, encoding, limits.maxBytes);
+        if (!decoded) return tooLarge();
+        content = decoded;
+      }
+      if (isGzipFile(content, contentType, current)) {
+        const decoded = await decompressCapped(content, "gzip", limits.maxBytes);
+        if (!decoded) return tooLarge();
+        content = decoded;
+      }
+
       const xRobots = res.headers["x-robots-tag"];
       return {
         ok: true,
@@ -212,7 +273,7 @@ export async function safeFetch(rawUrl: string | URL, options: SafeFetchOptions 
           status: res.statusCode,
           contentType,
           xRobotsTag: Array.isArray(xRobots) ? xRobots.join(", ") : (xRobots ?? null),
-          body: decodeBody(Buffer.concat(chunks), contentType),
+          body: decodeBody(content, contentType),
           bytes: total,
           redirectChain: chain,
           durationMs: Date.now() - started,

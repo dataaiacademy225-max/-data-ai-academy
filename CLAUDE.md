@@ -99,6 +99,7 @@ Tests (`cite-audit/tests`) : `unit/` (pur, crawler sur serveur local), `integrat
   - bloque les IP privées et réservées, localhost et les domaines internes ;
   - n'autorise que les ports 80 et 443 ;
   - applique un délai de 10 s, une taille maximale de 2 Mo et 5 redirections au plus.
+  - décompresse gzip, deflate et brotli (pages et sitemaps `.xml.gz`) avec la même limite de 2 Mo **après** décompression (protection contre les bombes de compression).
   
   La politique de production `defaultNetworkPolicy` n'est jamais affaiblie.
 - **robots.txt** est respecté pour chaque page et chaque redirection. S'il répond en erreur 5xx, on s'abstient.
@@ -139,7 +140,7 @@ Tests (`cite-audit/tests`) : `unit/` (pur, crawler sur serveur local), `integrat
 - **Avertissement obligatoire** (`AI_WARNING`) partout où un résultat IA s'affiche ; toujours parler d'un « échantillon ». Les réponses par API peuvent différer des applications grand public.
 - **Coût** : estimé avant lancement et accepté explicitement. C'est une fourchette indicative (tarifs publics d'octobre 2026, `src/lib/ai-pricing.ts`) ; le coût réel de l'API prime.
 - **API Perplexity** : Sonar Chat Completions n'est plus officiellement supporté depuis le 27/09/2026. L'adaptateur cible l'Agent API, dont le format de réponse n'a été vérifié que par des sources tierces. Le JSON complet est conservé ; vérifier le premier appel réel avant tout usage client.
-- **Pas encore implémenté** : indice de signaux GEO séparé, plans d'action à 30/90 jours, mesure de vitesse (PageSpeed), lecture des sitemaps `.xml.gz`, rendu JavaScript, recherche de mentions externes (LinkedIn, annuaires). Tant qu'ils n'existent pas, ces éléments restent « non vérifiés » et n'apparaissent pas comme mesurés.
+- **Pas encore implémenté** : indice de signaux GEO séparé, plans d'action à 30/90 jours, mesure de vitesse (PageSpeed), rendu JavaScript, recherche de mentions externes (LinkedIn, annuaires). Tant qu'ils n'existent pas, ces éléments restent « non vérifiés » et n'apparaissent pas comme mesurés.
 
 ## Charte
 

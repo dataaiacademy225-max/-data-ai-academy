@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import http, { type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import path from "node:path";
+import { brotliCompressSync, gzipSync } from "node:zlib";
 import { isPublicAddress } from "@/server/crawler/ip-policy";
 import type { NetworkPolicy } from "@/server/crawler/types";
 
@@ -175,6 +176,30 @@ function handle(req: IncomingMessage, res: ServerResponse, port: number) {
       };
       return write();
     }
+    case "/compresse-gzip":
+    case "/compresse-br": {
+      // Compression seulement si le client l'a demandée (comme un vrai serveur).
+      const br = url.pathname.endsWith("br");
+      const accepted = String(req.headers["accept-encoding"] ?? "");
+      if (!accepted.includes(br ? "br" : "gzip")) return html(200, VALID_HTML);
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "content-encoding": br ? "br" : "gzip" });
+      return res.end(br ? brotliCompressSync(VALID_HTML) : gzipSync(VALID_HTML));
+    }
+    case "/bombe":
+      // ~20 Ko compressés qui se déploient en 20 Mo : doit être arrêté à la limite de taille.
+      res.writeHead(200, { "content-type": "text/html", "content-encoding": "gzip" });
+      return res.end(gzipSync(Buffer.alloc(20 * 1024 * 1024, 0x20)));
+    case "/encodage-inconnu":
+      res.writeHead(200, { "content-type": "text/html", "content-encoding": "zstd" });
+      return res.end("illisible");
+    case "/compresse-corrompu":
+      res.writeHead(200, { "content-type": "text/html", "content-encoding": "gzip" });
+      return res.end("ceci n'est pas du gzip");
+    case "/sitemap.xml.gz":
+      res.writeHead(200, { "content-type": "application/gzip" });
+      return res.end(
+        gzipSync(`<?xml version="1.0"?><urlset><url><loc>http://site-test.com:${port}/page-valide</loc></url><url><loc>http://site-test.com:${port}/faq</loc></url></urlset>`),
+      );
     case "/gros-annonce":
       res.writeHead(200, { "content-type": "text/html", "content-length": String(5 * 1024 * 1024) });
       return res.write("<p>début</p>"); // le crawler doit s'arrêter avant de lire le reste

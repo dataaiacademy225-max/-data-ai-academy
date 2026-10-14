@@ -55,7 +55,13 @@ describe("fetchSitemap", () => {
     expect(result).toMatchObject({ found: true, validXml: false });
   });
 
-  it("format compressé non lu → null", async () => {
-    expect(await fetchSitemap(site, ["https://www.a.com/sitemap.xml.gz"], async () => notFound)).toBeNull();
+  it("sitemap compressé (.xml.gz) : demandé comme les autres (la décompression est faite par safeFetch)", async () => {
+    const requested: string[] = [];
+    const result = await fetchSitemap(site, ["https://www.a.com/sitemap.xml.gz"], async (u) => {
+      requested.push(u.toString());
+      return ok(u.toString(), '<urlset><url><loc>https://www.a.com/offres</loc></url></urlset>');
+    });
+    expect(requested).toEqual(["https://www.a.com/sitemap.xml.gz"]);
+    expect(result).toMatchObject({ found: true, validXml: true, urlCount: 1, urls: ["https://www.a.com/offres"] });
   });
 });
