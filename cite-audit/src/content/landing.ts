@@ -49,11 +49,14 @@ export const LANDING = {
       "Lors de tests réalisés sur plusieurs requêtes, Data & AI Academy a également été recommandée dans certaines réponses de Google AI et ChatGPT.",
     aiObservationNote: `Tests manuels, distincts du score CITE : ${APP_NAME} n'interroge aujourd'hui que Perplexity, par son API officielle.`,
     /**
-     * Période des tests manuels dans les IA, telle que rapportée par Steve Junior le 15/10/2026 :
-     * première requête vers le 15 septembre, recommandation ChatGPT ~3 semaines plus tard, Google quelques jours après.
+     * Chronologie rapportée par Steve Junior le 15/10/2026 : site mis en ligne vers le 15 septembre 2026,
+     * premières recommandations (ChatGPT, IA de Google) observées environ 3 semaines plus tard.
      * Aucun jour précis inventé. null = rien n'est affiché.
      */
-    aiTestPeriod: "entre mi-septembre et mi-octobre 2026" as string | null,
+    aiTestTiming:
+      "Site mis en ligne mi-septembre 2026 ; premières recommandations observées début octobre 2026, environ trois semaines plus tard." as
+        | string
+        | null,
     transparency:
       "Résultat observé à une date donnée. Les réponses peuvent varier selon la requête, la date, le modèle et la localisation. Ce score ne constitue pas une garantie de classement ou de recommandation.",
     cta: "Voir l'exemple de rapport",

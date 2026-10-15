@@ -25,7 +25,7 @@ describe("page d'accueil", () => {
     const { proof } = LANDING;
     expect(proof.badge).toBe("Audit interne");
     expect(proof.auditDate).toMatch(/\d{4}/);
-    expect(proof.aiTestPeriod).toMatch(/\d{4}/);
+    expect(proof.aiTestTiming).toMatch(/\d{4}/);
     expect(proof.scoreNote).toContain("pas une note de Google ni de ChatGPT");
     expect(proof.transparency).toContain("ne constitue pas une garantie");
     // La somme des piliers du rapport réel redonne le score affiché.
