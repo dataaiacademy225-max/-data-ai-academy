@@ -3,10 +3,12 @@ import Link from "next/link";
 import {
   ArrowRightIcon,
   EyeOffIcon,
+  FileTextIcon,
   FileSearchIcon,
   LinkIcon,
   MessageSquareQuoteIcon,
   ScanEyeIcon,
+  ShieldCheckIcon,
   SparklesIcon,
   ThumbsUpIcon,
   WaypointsIcon,
@@ -35,6 +37,9 @@ export default async function Home() {
   const cta = user
     ? { href: "/dashboard", label: LANDING.hero.ctaUser }
     : { href: "/demande-acces", label: LANDING.hero.ctaGuest };
+  // Hero : « Auditer mon site » mène à la création d'un audit (nouveau projet) ;
+  // sans compte, l'accès étant sur invitation, il ouvre la demande d'accès.
+  const auditHref = user ? "/projects/new" : "/demande-acces";
   const pillars = Object.keys(PILLARS) as Pillar[];
 
   const facts = [
@@ -49,14 +54,18 @@ export default async function Home() {
       {/* En-tête */}
       <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-background/60 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
-          <Link href="/" className="font-display text-lg font-bold tracking-tight">
-            <BrandName />
+          <Link href="/" className="flex shrink-0 flex-col leading-tight">
+            <span className="font-display text-lg font-bold tracking-tight">
+              <BrandName />
+            </span>
+            <span className="hidden text-[11px] whitespace-nowrap text-muted-foreground sm:block">{LANDING.hero.tagline}</span>
           </Link>
           <nav aria-label="Sections" className="hidden items-center gap-1 text-sm md:flex">
             {[
               ["#methode", "Méthode"],
               ["#echantillon", "Échantillon IA"],
               ["#limites", "Limites"],
+              ["/dashboard", "Tableau de bord"],
             ].map(([href, label]) => (
               <a
                 key={href}
@@ -67,25 +76,33 @@ export default async function Home() {
               </a>
             ))}
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             {!user && (
-              <Link href="/login" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+              <Link href="/login" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "whitespace-nowrap")}>
                 Se connecter
               </Link>
             )}
-            <Link href={cta.href} className={buttonVariants({ variant: "outline", size: "sm" })}>
-              {user ? "Tableau de bord" : "Demander un accès"}
+            <Link href={cta.href} className={cn(buttonVariants({ variant: "outline", size: "sm" }), "whitespace-nowrap")}>
+              {user ? (
+                "Tableau de bord"
+              ) : (
+                <>
+                  <span className="max-[379px]:hidden">Demander un accès</span>
+                  <span className="min-[380px]:hidden">Accès</span>
+                </>
+              )}
             </Link>
           </div>
         </div>
+        <p className="mx-auto -mt-2 max-w-6xl px-4 pb-2 text-[11px] text-muted-foreground sm:hidden">{LANDING.hero.tagline}</p>
       </header>
 
       <main className="flex-1">
         {/* Hero */}
         <section className="relative isolate overflow-hidden">
           <LandingGlow />
-          <div className="relative mx-auto grid max-w-6xl items-center gap-14 px-4 pt-20 pb-24 lg:grid-cols-[1.15fr_1fr] lg:pt-28 lg:pb-32">
-            <div>
+          <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 pt-12 pb-20 lg:grid-cols-[1.1fr_1fr] lg:gap-14 lg:pt-16 lg:pb-24">
+            <div className="min-w-0">
               <p className="reveal-up inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-muted-foreground">
                 <span className="relative flex size-1.5" aria-hidden="true">
                   <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-60 motion-reduce:animate-none" />
@@ -94,42 +111,60 @@ export default async function Home() {
                 {LANDING.hero.eyebrow}
               </p>
               <h1
-                className="reveal-up mt-6 font-display text-5xl leading-[1.02] font-semibold tracking-tight text-balance sm:text-6xl lg:text-7xl"
+                className="reveal-up mt-5 font-display text-4xl leading-[1.08] font-semibold tracking-tight text-balance break-words sm:text-5xl lg:text-[3.4rem]"
                 style={{ animationDelay: "80ms" }}
               >
-                <span className="bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-b from-white to-white/75 bg-clip-text text-transparent">
                   {LANDING.hero.titleStart}{" "}
                 </span>
                 <span className="bg-gradient-to-r from-[#ff7a29] via-[#ffa366] to-[#ffd2b0] bg-clip-text text-transparent drop-shadow-[0_0_24px_rgb(255_122_41/0.35)]">
                   {LANDING.hero.titleHighlight}
                 </span>{" "}
-                <span className="bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-b from-white to-white/75 bg-clip-text text-transparent">
                   {LANDING.hero.titleEnd}
                 </span>
               </h1>
-              <p className="reveal-up mt-6 max-w-xl text-lg text-pretty text-muted-foreground" style={{ animationDelay: "160ms" }}>
+              <p className="reveal-up mt-5 max-w-xl text-lg text-pretty text-[#c9d1dd]" style={{ animationDelay: "160ms" }}>
                 {LANDING.hero.lead}
               </p>
-              <div className="reveal-up mt-10 flex flex-wrap items-center gap-4" style={{ animationDelay: "240ms" }}>
-                <Magnetic>
+              <p
+                className="reveal-up mt-4 flex max-w-xl gap-2 text-sm text-pretty text-muted-foreground"
+                style={{ animationDelay: "200ms" }}
+              >
+                <ShieldCheckIcon className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden="true" />
+                <span>{LANDING.hero.transparency}</span>
+              </p>
+              <div className="reveal-up mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center" style={{ animationDelay: "240ms" }}>
+                <Magnetic className="inline-block w-full sm:w-auto">
                   <Link
-                    href={cta.href}
-                    className={cn(buttonVariants({ variant: "accent", size: "lg" }), "cta-shine h-12 rounded-full px-7 text-base")}
+                    href={auditHref}
+                    className={cn(
+                      buttonVariants({ variant: "accent", size: "lg" }),
+                      "cta-shine h-12 w-full rounded-full px-7 text-base font-semibold sm:w-auto",
+                    )}
                   >
-                    {cta.label}
+                    {LANDING.hero.ctaPrimary}
                     <ArrowRightIcon className="size-4" aria-hidden="true" />
                   </Link>
                 </Magnetic>
-                <a href="#methode" className={cn(buttonVariants({ variant: "ghost", size: "lg" }), "h-12 rounded-full")}>
-                  {LANDING.hero.secondary}
+                <a
+                  href="#exemple-rapport"
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "lg" }),
+                    "h-12 w-full rounded-full border-white/15 bg-transparent px-6 text-base hover:bg-white/[0.05] sm:w-auto",
+                  )}
+                >
+                  <FileTextIcon className="size-4" aria-hidden="true" />
+                  {LANDING.hero.ctaSecondary}
                 </a>
               </div>
-              <p className="reveal-up mt-5 text-sm text-muted-foreground" style={{ animationDelay: "320ms" }}>
-                {!user && <>{LANDING.hero.access} </>}
-                {LANDING.hero.disclaimer}
-              </p>
+              {!user && (
+                <p className="reveal-up mt-4 text-xs text-muted-foreground" style={{ animationDelay: "320ms" }}>
+                  {LANDING.hero.access}
+                </p>
+              )}
             </div>
-            <div className="reveal-up" style={{ animationDelay: "300ms" }}>
+            <div className="reveal-up min-w-0" style={{ animationDelay: "300ms" }}>
               <ProductPreview />
             </div>
           </div>

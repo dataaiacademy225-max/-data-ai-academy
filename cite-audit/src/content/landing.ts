@@ -3,19 +3,24 @@
  * (tests/unit/content/landing.test.ts). Les chiffres (critères, piliers, pages) viennent du code, pas d'ici.
  */
 
+import { APP_NAME } from "@/lib/brand";
+
 export const LANDING = {
   hero: {
+    tagline: "Audit SEO/GEO B2B — Méthode CITE",
     eyebrow: "GEO · Generative Engine Optimization",
-    titleStart: "Rendez votre marque",
-    titleHighlight: "lisible",
-    titleEnd: "pour les moteurs de réponse.",
-    lead:
-      "ChatGPT, Perplexity et Gemini répondent désormais à la place d'une liste de liens. GriotCite audite les signaux observables de votre site qui peuvent renforcer la compréhension de votre marque par ces assistants et par Google, puis vous dit quoi corriger en premier.",
+    titleStart: "Découvrez pourquoi votre marque est",
+    titleHighlight: "peu visible",
+    titleEnd: "dans Google et les IA",
+    lead: `${APP_NAME} analyse votre positionnement, votre SEO, vos contenus, vos preuves et votre tunnel pour vous fournir un plan d'action priorisé.`,
+    transparency: `Aucune position ni recommandation n'est garantie : ${APP_NAME} vous aide à maximiser vos chances d'être trouvé, compris et cité.`,
+    ctaPrimary: "Auditer mon site",
+    ctaSecondary: "Voir un exemple de rapport",
+    access: "Accès sur invitation pendant la phase pilote : sans compte, « Auditer mon site » ouvre la demande d'accès.",
+    // Utilisés par la section d'appel finale (inchangée).
     disclaimer: "Résultat non garanti : une méthode transparente, pas une promesse.",
     ctaGuest: "Demander un accès",
     ctaUser: "Ouvrir mon tableau de bord",
-    secondary: "Voir la méthode",
-    access: "Accès sur invitation pendant la phase pilote.",
   },
   preview: {
     badge: "[DÉMO] Exemple fictif",

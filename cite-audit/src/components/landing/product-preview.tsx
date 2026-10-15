@@ -16,7 +16,8 @@ const DEMO_FINDINGS = [
 /** Aperçu stylisé d'un rapport, avec des données fictives clairement signalées. */
 export function ProductPreview() {
   return (
-    <div className="relative">
+    // Cible du bouton « Voir un exemple de rapport ».
+    <div id="exemple-rapport" role="figure" aria-label="Exemple de rapport, données fictives" className="relative scroll-mt-24">
       <div aria-hidden="true" className="absolute -inset-px rounded-2xl bg-gradient-to-b from-white/20 via-white/5 to-transparent" />
       <div className="relative rounded-2xl border border-white/10 bg-[#070b13]/90 p-5 shadow-[0_40px_120px_-40px_rgb(255_122_41/0.45)] backdrop-blur-xl sm:p-6">
         <div className="flex items-center justify-between gap-3">
