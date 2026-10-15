@@ -10,6 +10,7 @@ import {
   partial,
   pass,
   type Rule,
+  plural,
 } from "@/server/scoring/criteria/shared";
 import { normalize } from "@/server/scoring/text";
 import type { Evidence } from "@/server/scoring/types";
@@ -29,7 +30,7 @@ export const E1: Rule = (view) => {
   const contactLinks = findLinks(view.home.facts.internalLinks, LINK_KINDS.contact);
   const signals = [emails.length > 0, phones.length > 0, contactLinks.length > 0].filter(Boolean).length;
   const evidence: Evidence[] = [
-    ...(emails.length ? [homeEvidence(view, "E-mail cliquable", `${emails.length} adresse(s)`)] : []),
+    ...(emails.length ? [homeEvidence(view, "E-mail cliquable", plural(emails.length, "adresse"))] : []),
     ...(phones.length ? [homeEvidence(view, "Téléphone cliquable", phones[0])] : []),
     ...linkEvidence(contactLinks, "Lien vers la page contact"),
   ];
@@ -53,10 +54,10 @@ export const E2: Rule = (view) => {
   const evidence: Evidence[] = [
     ...booking.slice(0, 2).map((c) => ({ url: c.href ?? undefined, label: "Prise de rendez-vous en ligne", excerpt: c.text })),
     ...bookingLinks.slice(0, 1).map((l) => ({ url: l.url, label: "Lien de réservation" })),
-    ...forms.slice(0, 2).map((f) => ({ url: f.url, label: `Formulaire de ${f.fieldCount} champ(s)`, excerpt: f.submitText ?? undefined })),
+    ...forms.slice(0, 2).map((f) => ({ url: f.url, label: `Formulaire de ${plural(f.fieldCount, "champ")}`, excerpt: f.submitText ?? undefined })),
   ];
   if (booking.length > 0 || bookingLinks.length > 0 || shortForms.length > 0) {
-    const what = booking.length || bookingLinks.length ? "Une prise de rendez-vous en ligne" : `Un formulaire de ${shortForms[0].fieldCount} champ(s)`;
+    const what = booking.length || bookingLinks.length ? "Une prise de rendez-vous en ligne" : `Un formulaire de ${plural(shortForms[0].fieldCount, "champ")}`;
     return pass(`${what} est proposé(e).`, evidence);
   }
   if (forms.length > 0) {
@@ -80,7 +81,7 @@ export const E3: Rule = (view) => {
   if (repeated) {
     return pass(`L'action « ${repeated.text} » est proposée en haut et plus bas dans la page.`, [homeEvidence(view, "Action répétée", repeated.text)], "MEDIUM");
   }
-  return partial(0.5, `${ctas.length} action(s) repérée(s), mais aucune n'est répétée en haut et plus bas dans la page.`, ["La même action principale en haut et en bas de page"], ctas.slice(0, 3).map((c) => homeEvidence(view, c.position === "top" ? "Action en haut" : "Action plus bas", c.text)), "MEDIUM");
+  return partial(0.5, `${plural(ctas.length, "action repérée", "actions repérées")}, mais aucune n'est répétée en haut et plus bas dans la page.`, ["La même action principale en haut et en bas de page"], ctas.slice(0, 3).map((c) => homeEvidence(view, c.position === "top" ? "Action en haut" : "Action plus bas", c.text)), "MEDIUM");
 };
 
 export const E4: Rule = (view) => {

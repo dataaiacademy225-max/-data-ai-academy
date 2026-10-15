@@ -11,7 +11,7 @@ export function VerifyEmailBanner({
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   return (
-    <div role="status" className="border-b border-border bg-accent/10">
+    <div role="status" className="border-b border-border bg-accent/10 print:hidden">
       <form action={formAction} className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 lg:px-8 text-sm">
         <span aria-hidden="true">✉️</span>
         <span>Adresse e-mail non confirmée : ouvrez le lien reçu à l&apos;inscription.</span>

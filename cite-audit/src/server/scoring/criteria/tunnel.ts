@@ -13,6 +13,8 @@ import {
   pass,
   share,
   type Rule,
+  plural,
+  agree,
 } from "@/server/scoring/criteria/shared";
 import { matchedTerms, normalize, terms } from "@/server/scoring/text";
 
@@ -38,12 +40,12 @@ export const T1: Rule = (view) => {
   if (offerPages.length > 0) {
     const withH1 = offerPages.filter((p) => p.analysis.facts.h1.length > 0);
     const evidence = offerPages.slice(0, 3).map((p) => ({ url: p.analysis.finalUrl, label: "Page d'offre analysée", excerpt: p.analysis.facts.h1[0] }));
-    if (withH1.length === offerPages.length) return pass(`${offerPages.length} page(s) d'offre analysée(s), chacune avec son titre principal.`, evidence, "MEDIUM");
+    if (withH1.length === offerPages.length) return pass(`${plural(offerPages.length, "page d'offre analysée", "pages d'offre analysées")}, chacune avec son titre principal.`, evidence, "MEDIUM");
     return partial(share(withH1.length, offerPages.length), "Des pages d'offre existent mais certaines n'ont pas de titre principal.", ["Un titre principal sur chaque page d'offre"], evidence, "MEDIUM");
   }
   const links = findLinks(view.home.facts.internalLinks, LINK_KINDS.offer);
   if (links.length > 0) {
-    return pass(`La page d'accueil renvoie vers ${links.length} page(s) d'offre (contenu de ces pages non analysé dans cette version).`, linkEvidence(links, "Lien vers une offre"), "MEDIUM");
+    return pass(`La page d'accueil renvoie vers ${plural(links.length, "page d'offre", "pages d'offre")} (contenu de ces pages non analysé dans cette version).`, linkEvidence(links, "Lien vers une offre"), "MEDIUM");
   }
   return fail("Aucun lien vers une page d'offre (offres, services, solutions, formations…) n'a été trouvé depuis l'accueil.", ["Une page par offre principale, reliée depuis le menu"], [homeEvidence(view, "Liens de la page d'accueil analysés")], "MEDIUM");
 };
@@ -52,7 +54,7 @@ export const T2: Rule = (view) => {
   const queries = view.input.context.geoQueries;
   if (queries.length === 0) return notApplicable("Sans objet : aucune question de prospect n'a été renseignée dans le projet.");
   if (view.okPages.length < MIN_PAGES_FOR_T2) {
-    return notVerified(`Non vérifié : il faut analyser au moins ${MIN_PAGES_FOR_T2} pages pour savoir si vos questions ont une page dédiée (${view.okPages.length} analysée(s)).`);
+    return notVerified(`Non vérifié : il faut analyser au moins ${MIN_PAGES_FOR_T2} pages pour savoir si vos questions ont une page dédiée (${plural(view.okPages.length, "analysée", "analysées")}).`);
   }
   const covered: string[] = [];
   const uncovered: string[] = [];
@@ -71,8 +73,8 @@ export const T2: Rule = (view) => {
       uncovered.push(query);
     }
   }
-  if (uncovered.length === 0) return pass(`Chacune de vos ${queries.length} question(s) a une page dont les titres reprennent les mots.`, evidence, "MEDIUM");
-  if (covered.length > 0) return partial(share(covered.length, queries.length), `${covered.length} question(s) sur ${queries.length} ont une page dédiée.`, uncovered.map((q) => `Page pour : « ${q} »`), evidence, "MEDIUM");
+  if (uncovered.length === 0) return pass(queries.length === 1 ? "Votre question a une page dont les titres reprennent les mots." : `Chacune de vos ${queries.length} questions a une page dont les titres reprennent les mots.`, evidence, "MEDIUM");
+  if (covered.length > 0) return partial(share(covered.length, queries.length), `${plural(covered.length, "question")} sur ${queries.length} ${agree(covered.length, "a", "ont")} une page dédiée.`, uncovered.map((q) => `Page pour : « ${q} »`), evidence, "MEDIUM");
   return fail("Aucune des pages analysées ne reprend les mots de vos questions prioritaires dans ses titres.", uncovered.map((q) => `Page pour : « ${q} »`), [], "MEDIUM");
 };
 

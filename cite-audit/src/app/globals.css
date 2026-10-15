@@ -196,6 +196,13 @@ body {
     --input: #cfd6e1;
     background: #fff;
   }
+  /* Preuves et détails dépliés à l'impression. Chrome masque le contenu d'un <details> fermé
+     dans le pseudo-élément ::details-content : forcer les enfants ne suffit pas. */
+  details::details-content {
+    content-visibility: visible;
+    display: block;
+    height: auto;
+  }
   details > *:not(summary) {
     display: block;
   }

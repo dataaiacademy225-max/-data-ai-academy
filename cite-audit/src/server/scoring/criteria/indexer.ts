@@ -13,6 +13,8 @@ import {
   share,
   type Rule,
   type SiteView,
+  plural,
+  agree,
 } from "@/server/scoring/criteria/shared";
 import { containsPhrase, truncate } from "@/server/scoring/text";
 import type { Evidence } from "@/server/scoring/types";
@@ -78,6 +80,7 @@ function lengthRule(
   min: number,
   max: number,
   name: string,
+  names: string,
   label: string,
 ) {
   if (view.okPages.length === 0) return homeNotVerified(view);
@@ -96,14 +99,14 @@ function lengthRule(
     return partial(0.3, `La ${name} existe mais fait ${present[0].length} caractères (conseillé : ${min} à ${max}).`, [`Une ${name} de ${min} à ${max} caractères`], evidence);
   }
   const missing: string[] = [];
-  if (present.length < total) missing.push(`${total - present.length} page(s) sans ${name}`);
-  if (good.length < present.length) missing.push(`${present.length - good.length} ${name}(s) hors de ${min} à ${max} caractères`);
-  if (!unique) missing.push(`Des ${name}s identiques sur plusieurs pages`);
-  return partial(Math.max(0.3, share(good.length, total)), `${good.length} ${name}(s) sur ${total} respectent la longueur conseillée (${min} à ${max} caractères).`, missing, evidence);
+  if (present.length < total) missing.push(`${plural(total - present.length, "page")} sans ${name}`);
+  if (good.length < present.length) missing.push(`${plural(present.length - good.length, name, names)} hors de ${min} à ${max} caractères`);
+  if (!unique) missing.push(`Des ${names} identiques sur plusieurs pages`);
+  return partial(Math.max(0.3, share(good.length, total)), `${plural(good.length, name, names)} sur ${total} ${agree(good.length, "respecte", "respectent")} la longueur conseillée (${min} à ${max} caractères).`, missing, evidence);
 }
 
-export const I4: Rule = (view) => lengthRule(view, (f) => f.title, 30, 65, "titre de page", "Titre (title)");
-export const I5: Rule = (view) => lengthRule(view, (f) => f.metaDescription, 70, 160, "description de page", "Meta description");
+export const I4: Rule = (view) => lengthRule(view, (f) => f.title, 30, 65, "titre de page", "titres de page", "Titre (title)");
+export const I5: Rule = (view) => lengthRule(view, (f) => f.metaDescription, 70, 160, "description de page", "descriptions de page", "Meta description");
 
 export const I6: Rule = (view) => {
   const unreadable = contentUnreadable(view);
@@ -115,7 +118,7 @@ export const I6: Rule = (view) => {
     label: `${p.analysis.facts.h1.length} H1, ${p.analysis.facts.h2.length} H2`,
   }));
   if (good === total) return pass("Chaque page analysée a un titre principal unique et des sous-titres.", evidence);
-  if (good > 0) return partial(share(good, total), `${good} page(s) sur ${total} ont un titre principal unique et des sous-titres.`, ["Un H1 et des H2 sur chaque page"], evidence);
+  if (good > 0) return partial(share(good, total), `${plural(good, "page")} sur ${total} ${agree(good, "a", "ont")} un titre principal unique et des sous-titres.`, ["Un H1 et des H2 sur chaque page"], evidence);
   return fail("Aucune page analysée n'a à la fois un titre principal unique et des sous-titres.", ["Un H1 unique et des H2 sur chaque page"], evidence);
 };
 
@@ -142,7 +145,7 @@ export const I7: Rule = (view) => {
   }
   const evidence = pagesEvidence(view, (p) => p.analysis.facts.canonical.join(", ") || null, "Canonical");
   if (good === total) return pass("Chaque page analysée déclare une adresse de référence sur votre domaine.", evidence);
-  if (good > 0) return partial(share(good, total), `${good} page(s) sur ${total} déclarent une adresse de référence correcte.`, [...new Set(missing)], evidence);
+  if (good > 0) return partial(share(good, total), `${plural(good, "page")} sur ${total} ${agree(good, "déclare", "déclarent")} une adresse de référence correcte.`, [...new Set(missing)], evidence);
   return fail("Aucune adresse de référence (canonical) correcte n'a été trouvée.", [...new Set(missing)], evidence);
 };
 
@@ -200,7 +203,7 @@ export const I9: Rule = (view) => {
   if (!view.home) return homeNotVerified(view);
   const blocks = view.okPages.flatMap((p) => p.analysis.facts.jsonLd);
   const invalid = blocks.filter((b) => !b.valid).length;
-  const invalidNote = invalid ? ` ${invalid} bloc(s) JSON-LD invalide(s) ignoré(s).` : "";
+  const invalidNote = invalid ? ` ${plural(invalid, "bloc JSON-LD invalide ignoré", "blocs JSON-LD invalides ignorés")}.` : "";
   const evidence: Evidence[] = blocks.slice(0, 4).map((b) => ({
     url: view.home?.finalUrl,
     label: b.valid ? `JSON-LD : ${b.types.join(", ") || "type non précisé"}` : "JSON-LD invalide",
@@ -241,10 +244,10 @@ export const I11: Rule = (view) => {
   const missingAlt = view.okPages.reduce((n, p) => n + p.analysis.facts.images.missingAlt, 0);
   if (total === 0) return notApplicable("Sans objet : aucune image sur les pages analysées.");
   const ratio = 1 - missingAlt / total;
-  const evidence = [homeEvidence(view, `${total - missingAlt} image(s) décrite(s) sur ${total}`)];
+  const evidence = [homeEvidence(view, `${plural(total - missingAlt, "image décrite", "images décrites")} sur ${total}`)];
   if (ratio >= 0.9) return pass(`${Math.round(ratio * 100)} % des images ont un texte alternatif.`, evidence);
-  if (ratio >= 0.5) return partial(ratio, `${missingAlt} image(s) sur ${total} n'ont pas de texte alternatif.`, [`${missingAlt} texte(s) alternatif(s) manquant(s)`], evidence);
-  return fail(`${missingAlt} image(s) sur ${total} n'ont pas de texte alternatif.`, [`${missingAlt} texte(s) alternatif(s) manquant(s)`], evidence);
+  if (ratio >= 0.5) return partial(ratio, `${plural(missingAlt, "image")} sur ${total} ${agree(missingAlt, "n'a", "n'ont")} pas de texte alternatif.`, [plural(missingAlt, "texte alternatif manquant", "textes alternatifs manquants")], evidence);
+  return fail(`${plural(missingAlt, "image")} sur ${total} ${agree(missingAlt, "n'a", "n'ont")} pas de texte alternatif.`, [plural(missingAlt, "texte alternatif manquant", "textes alternatifs manquants")], evidence);
 };
 
 export const I12: Rule = (view) => {
@@ -252,17 +255,17 @@ export const I12: Rule = (view) => {
   if (unreadable || !view.home) return unreadable ?? homeNotVerified(view);
   const count = view.home.facts.internalLinks.length;
   const broken = view.input.site.brokenLinks;
-  const evidence = [homeEvidence(view, `${count} lien(s) interne(s) depuis l'accueil`)];
+  const evidence = [homeEvidence(view, `${plural(count, "lien interne", "liens internes")} depuis l'accueil`)];
   const brokenNote = broken
     ? broken.broken.length
-      ? ` ${broken.broken.length} lien(s) cassé(s) sur ${broken.checked} testés.`
+      ? ` ${plural(broken.broken.length, "lien cassé", "liens cassés")} sur ${broken.checked} ${agree(broken.checked, "testé", "testés")}.`
       : ` Aucun lien cassé sur ${broken.checked} testés.`
     : " Les liens cassés ne sont pas encore vérifiés dans cette version.";
   if (count === 0) return fail(`La page d'accueil ne renvoie vers aucune autre page du site.${brokenNote}`, ["Des liens vers vos pages clés"], evidence);
   if (broken && broken.broken.length > 0) {
-    return partial(0.5, `La page d'accueil relie ${count} page(s).${brokenNote}`, broken.broken.slice(0, 5).map((u) => `Lien cassé : ${u}`), evidence);
+    return partial(0.5, `La page d'accueil relie ${plural(count, "page")}.${brokenNote}`, broken.broken.slice(0, 5).map((u) => `Lien cassé : ${u}`), evidence);
   }
-  if (count < 5) return partial(0.5, `La page d'accueil ne relie que ${count} page(s) du site.${brokenNote}`, ["Au moins 5 liens vers vos pages clés"], evidence);
+  if (count < 5) return partial(0.5, `La page d'accueil ne relie que ${plural(count, "page")} du site.${brokenNote}`, ["Au moins 5 liens vers vos pages clés"], evidence);
   return pass(`La page d'accueil relie ${count} pages du site.${brokenNote}`, evidence);
 };
 
@@ -288,7 +291,7 @@ export const I13: Rule = (view) => {
   const missing = checks.filter((c) => !c.ok).map((c) => c.label);
   const evidence = checks.map((c) => homeEvidence(view, `${c.ok ? "✓" : "✗"} ${c.label}`));
   if (ok.length === checks.length) return pass(`« ${companyName} »${city ? ` et ${city}` : ""} apparaissent de façon cohérente.`, evidence, "MEDIUM");
-  if (ok.length > 0) return partial(share(ok.length, checks.length), `Nom et localisation ne sont repris qu'en partie (${ok.length} vérification(s) sur ${checks.length}).`, missing, evidence, "MEDIUM");
+  if (ok.length > 0) return partial(share(ok.length, checks.length), `Nom et localisation ne sont repris qu'en partie (${plural(ok.length, "vérification")} sur ${checks.length}).`, missing, evidence, "MEDIUM");
   return fail(`Le nom « ${companyName} » n'apparaît ni dans le titre ni dans le texte de la page.`, missing, evidence, "MEDIUM");
 };
 

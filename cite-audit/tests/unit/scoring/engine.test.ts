@@ -11,6 +11,8 @@ function expectExplainable(result: ScoringResult) {
     expect(pillar.criteria.reduce((n, c) => n + c.maxPoints, 0)).toBe(pillar.maxPoints);
     for (const c of pillar.criteria) {
       expect(c.explanation.length, `${c.code} sans explication`).toBeGreaterThan(10);
+      // Accords au pluriel écrits en toutes lettres (« 12 titres de page »), jamais « titre(s) ».
+      for (const text of [c.explanation, ...(c.missing ?? [])]) expect(text, c.code).not.toMatch(/\p{L}\(s\)/u);
       if (c.status === "NOT_VERIFIED" || c.status === "NOT_APPLICABLE") {
         expect(c.points, `${c.code} non vérifié ne doit pas avoir de points`).toBeNull();
       } else {
