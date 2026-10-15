@@ -73,6 +73,55 @@ body {
   color: var(--foreground);
 }
 
+/* Espace connecté : thème sombre premium (noirs bleutés de la charte, accents orange). */
+.theme-premium {
+  color-scheme: dark;
+  --background: #04060b;
+  --foreground: #e9edf3;
+  --card: #0a0e16;
+  --card-foreground: #e9edf3;
+  --muted: #111725;
+  --muted-foreground: #8b95a7;
+  --primary: #ff7a29;
+  --primary-foreground: #0b1526;
+  --accent: #ff7a29;
+  --accent-foreground: #0b1526;
+  --destructive: #ef5350;
+  --destructive-foreground: #0b1526;
+  --border: #19202e;
+  --input: #253047;
+  --ring: #ff7a29;
+  --chart-1: #ff7a29;
+  --chart-2: #7d9bd1;
+  --chart-3: #9aa6ba;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Grille lumineuse de l'en-tête du tableau de bord, estompée vers les bords. */
+.premium-grid {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 30%, transparent 75%);
+}
+
+/* Carte « projecteur » : halo qui suit la souris (variables --spot-x / --spot-y posées par le composant). */
+.spotlight {
+  background-image: radial-gradient(
+    420px circle at var(--spot-x, 50%) var(--spot-y, -40%),
+    rgb(255 122 41 / 0.09),
+    transparent 60%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-premium * {
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Impression du rapport : sans en-tête ni pied d'application, fond blanc. */
 @media print {
   header.border-b,
@@ -82,6 +131,21 @@ body {
   body {
     background: #fff;
     color: #0b1526;
+  }
+  /* Le thème sombre ne s'imprime pas : retour aux couleurs claires de la charte. */
+  .theme-premium {
+    color-scheme: light;
+    --background: #ffffff;
+    --foreground: #0b1526;
+    --card: #ffffff;
+    --card-foreground: #0b1526;
+    --muted: #eef1f6;
+    --muted-foreground: #5b6578;
+    --primary: #0b1526;
+    --primary-foreground: #ffffff;
+    --border: #dde2ea;
+    --input: #cfd6e1;
+    background: #fff;
   }
   details > *:not(summary) {
     display: block;
