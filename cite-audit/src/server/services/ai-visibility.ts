@@ -4,6 +4,7 @@ import { getAiEnv } from "@/lib/env";
 import { prisma } from "@/lib/db";
 import type { Competitor } from "@/lib/validation/project";
 import { describeProviders } from "@/server/ai-visibility/providers";
+import { summarizeAiSamples } from "@/server/ai-visibility/summary";
 import type { Prisma } from "@/generated/prisma/client";
 import { QUEUED_STALE_MS } from "@/server/services/audits";
 import { lockForTransaction } from "@/server/services/locks";
@@ -128,4 +129,28 @@ export async function getAiVisibility(userId: string, projectId: string) {
     include: { results: { orderBy: { position: "asc" } } },
   });
   return { project, runs, usedToday: await queriesUsedToday(userId) };
+}
+
+/** Synthèse des échantillons de réponses d'IA de l'utilisateur (requêtes réussies), pour le tableau de bord. */
+export async function getAiSampleSummary(userId: string) {
+  const rows = await prisma.aiQueryResult.findMany({
+    where: { status: "SUCCEEDED", run: { project: { userId } } },
+    select: {
+      provider: true,
+      brandMentioned: true,
+      brandCited: true,
+      brandRecommended: true,
+      run: { select: { isDemo: true } },
+    },
+    take: 5000,
+  });
+  return summarizeAiSamples(
+    rows.map((row) => ({
+      provider: row.provider,
+      isDemo: row.run.isDemo,
+      brandMentioned: row.brandMentioned,
+      brandCited: row.brandCited,
+      brandRecommended: row.brandRecommended,
+    })),
+  );
 }

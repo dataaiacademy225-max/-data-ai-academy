@@ -12,9 +12,9 @@ import { BrandName } from "@/components/brand-name";
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const user = await requireUser();
   return (
-    <>
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-4">
+    <div className="theme-premium flex min-h-full flex-1 flex-col">
+      <header className="sticky top-0 z-40 border-b border-border/70 bg-background/70 backdrop-blur-xl">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
           <Link href="/dashboard" className="font-display text-lg font-bold">
             <BrandName />
           </Link>
@@ -39,7 +39,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       {!user.emailVerified && <VerifyEmailBanner action={resendVerificationEmailAction} />}
       {isDesignatedOwner(user) && !user.twoFactorEnabled && (
         <div role="status" className="border-b border-border bg-accent/10">
-          <p className="mx-auto max-w-5xl px-4 py-2 text-sm">
+          <p className="mx-auto max-w-6xl px-4 py-2 text-sm">
             <span aria-hidden="true">🔐 </span>
             Compte propriétaire : activez la double authentification pour débloquer les audits illimités.{" "}
             <Link className="font-medium underline" href="/settings/account#double-authentification">
@@ -48,12 +48,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           </p>
         </div>
       )}
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
       <footer className="border-t border-border py-4 text-center text-xs text-muted-foreground">
         Le score CITE est un indicateur interne Data &amp; AI Academy, basé sur des signaux observables. Ce
         n&apos;est pas une mesure de Google, ChatGPT, Perplexity ou Gemini.
         <LegalLinks className="mt-2" />
       </footer>
-    </>
+    </div>
   );
 }
