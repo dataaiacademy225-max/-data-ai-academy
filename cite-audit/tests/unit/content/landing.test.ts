@@ -20,4 +20,16 @@ describe("page d'accueil", () => {
     expect(LANDING.method.note).toContain("indicateur interne");
     expect(LANDING.preview.badge).toContain("[DÉMO]");
   });
+
+  it("section de preuve : audit interne daté, score interne, aucune généralisation", () => {
+    const { proof } = LANDING;
+    expect(proof.badge).toBe("Audit interne");
+    expect(proof.auditDate).toMatch(/\d{4}/);
+    expect(proof.scoreNote).toContain("pas une note de Google ni de ChatGPT");
+    expect(proof.transparency).toContain("ne constitue pas une garantie");
+    // La somme des piliers du rapport réel redonne le score affiché.
+    expect(Math.round(proof.pillars.reduce((n, p) => n + p.value, 0))).toBe(proof.score);
+    const all = JSON.stringify(proof).toLowerCase();
+    for (const forbidden of ["toutes les ia", "numéro 1", "garanti par", "score officiel"]) expect(all).not.toContain(forbidden);
+  });
 });
