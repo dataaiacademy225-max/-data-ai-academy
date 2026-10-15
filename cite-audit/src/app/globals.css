@@ -18,6 +18,10 @@
   --input: #cfd6e1;
   --ring: #ff7a29;
   --radius: 0.625rem;
+  /* Graphiques : couleurs de la charte. */
+  --chart-1: #ff7a29;
+  --chart-2: #1b3155;
+  --chart-3: #8a94a6;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -37,6 +41,9 @@
     --border: #1b3155;
     --input: #26406b;
     --ring: #ff7a29;
+    --chart-1: #ff7a29;
+    --chart-2: #7d9bd1;
+    --chart-3: #9aa6ba;
   }
 }
 

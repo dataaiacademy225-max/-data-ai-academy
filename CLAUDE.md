@@ -20,7 +20,7 @@ Conception de référence : `cite-audit/docs/ARCHITECTURE.md`. Installation dét
 | Domaine | Choix |
 |---|---|
 | Application | Next.js 16 App Router, React 19, TypeScript strict. `cacheComponents` désactivé. |
-| UI | Tailwind CSS 4. Composants au format shadcn/ui écrits à la main dans `src/components/ui` (le registre shadcn n'est pas joignable depuis l'environnement cloud). |
+| UI | Tailwind CSS 4. Composants au format shadcn/ui écrits à la main dans `src/components/ui` (le registre shadcn n'est pas joignable depuis l'environnement cloud ; `components.json` : style new-york, base zinc, variables CSS, les couleurs restent celles de la charte dans `globals.css`). Icônes : `lucide-react` ; fenêtres de dialogue : `@radix-ui/react-dialog` ; graphiques : `recharts` via des composants au format Tremor Raw (`components/ui/area-chart.tsx`, couleurs `--chart-1…3` de la charte ; `@tremor/react` écarté : React 18 et Tailwind 3 seulement). Page de vérification des composants : `/settings/ui-test` (propriétaire seulement en production). |
 | Données | PostgreSQL 16, Prisma 7 (client généré dans `src/generated/prisma`, adaptateur `@prisma/adapter-pg`, config `prisma.config.ts`). |
 | Auth | Better Auth (e-mail + mot de passe, sessions en base, double authentification TOTP par le plugin `two-factor`). |
 | Validation | Zod 4 (schémas partagés client/serveur). |
