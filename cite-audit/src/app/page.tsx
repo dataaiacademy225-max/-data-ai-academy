@@ -34,7 +34,7 @@ export default async function Home() {
   const user = await getCurrentUser();
   const cta = user
     ? { href: "/dashboard", label: LANDING.hero.ctaUser }
-    : { href: "/signup", label: LANDING.hero.ctaGuest };
+    : { href: "/demande-acces", label: LANDING.hero.ctaGuest };
   const pillars = Object.keys(PILLARS) as Pillar[];
 
   const facts = [
@@ -74,7 +74,7 @@ export default async function Home() {
               </Link>
             )}
             <Link href={cta.href} className={buttonVariants({ variant: "outline", size: "sm" })}>
-              {user ? "Tableau de bord" : "Essayer"}
+              {user ? "Tableau de bord" : "Demander un accès"}
             </Link>
           </div>
         </div>

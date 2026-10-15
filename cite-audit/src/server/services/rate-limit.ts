@@ -23,6 +23,9 @@ export const LIMITS = {
   twoFactorPerIp: { max: 20, windowMs: 15 * 60_000 },
   // Activation, désactivation, nouveaux codes de secours : chaque tentative revérifie le mot de passe.
   twoFactorSettingsPerUser: { max: 10, windowMs: 15 * 60_000 },
+  // Formulaire public de demande d'accès (sans compte) : contre le spam et l'envoi massif d'e-mails.
+  accessRequestPerIp: { max: 5, windowMs: 60 * 60_000 },
+  accessRequestPerEmail: { max: 3, windowMs: 24 * 60 * 60_000 },
 } as const satisfies Record<string, LimitRule>;
 
 /** Empreinte de la clé : aucune donnée personnelle (e-mail, IP) n'est stockée en clair. */

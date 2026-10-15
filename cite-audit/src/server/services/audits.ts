@@ -70,7 +70,20 @@ export async function listAudits(userId: string, projectId: string) {
   return prisma.audit.findMany({
     where: { projectId, project: { userId } },
     orderBy: { queuedAt: "desc" },
-    select: { id: true, status: true, scoreTotal: true, queuedAt: true, finishedAt: true, isDemo: true, progress: true },
+    select: {
+      id: true,
+      status: true,
+      scoreTotal: true,
+      queuedAt: true,
+      finishedAt: true,
+      isDemo: true,
+      progress: true,
+      scoringVersion: true,
+      scoreClarifier: true,
+      scoreIndexer: true,
+      scoreTunnel: true,
+      scoreEnclencher: true,
+    },
   });
 }
 

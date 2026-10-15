@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboardIcon, PlusIcon, UserRoundIcon } from "lucide-react";
+import { InboxIcon, LayoutDashboardIcon, PlusIcon, UserRoundIcon } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -12,6 +12,8 @@ const MAIN_ITEMS = [
   { href: "/projects/new", label: "Nouveau projet", icon: PlusIcon },
   { href: "/settings/account", label: "Mon compte", icon: UserRoundIcon },
 ];
+// Réservé au propriétaire : la page revérifie les droits côté serveur.
+const OWNER_ITEMS = [{ href: "/settings/demandes-acces", label: "Demandes d'accès", icon: InboxIcon }];
 
 export type NavProject = { id: string; companyName: string; isDemo: boolean };
 
@@ -19,8 +21,17 @@ const isActive = (pathname: string, href: string, exact: boolean) =>
   exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 
 /** Liens de navigation de l'espace connecté, avec repère animé sur la page active. */
-export function NavLinks({ projects = [], variant }: { projects?: NavProject[]; variant: "sidebar" | "bar" }) {
+export function NavLinks({
+  projects = [],
+  variant,
+  owner = false,
+}: {
+  projects?: NavProject[];
+  variant: "sidebar" | "bar";
+  owner?: boolean;
+}) {
   const pathname = usePathname();
+  const items = owner ? [...MAIN_ITEMS, ...OWNER_ITEMS] : MAIN_ITEMS;
   const reduce = useReducedMotion();
   const pillId = `nav-pill-${variant}`;
 
@@ -56,7 +67,7 @@ export function NavLinks({ projects = [], variant }: { projects?: NavProject[]; 
   if (variant === "bar") {
     return (
       <nav aria-label="Navigation principale" className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-2">
-        {MAIN_ITEMS.map(({ href, label, icon: Icon }) =>
+        {items.map(({ href, label, icon: Icon }) =>
           item(href, label, <Icon className="size-4" aria-hidden="true" />, isActive(pathname, href, href === "/dashboard")),
         )}
       </nav>
@@ -66,7 +77,7 @@ export function NavLinks({ projects = [], variant }: { projects?: NavProject[]; 
   return (
     <nav aria-label="Navigation principale" className="space-y-6">
       <div className="space-y-0.5">
-        {MAIN_ITEMS.map(({ href, label, icon: Icon }) =>
+        {items.map(({ href, label, icon: Icon }) =>
           item(
             href,
             label,

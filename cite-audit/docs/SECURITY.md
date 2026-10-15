@@ -51,6 +51,7 @@ Chaque mesure renvoie au code qui la met en œuvre. Mis à jour le 14 octobre 20
 | Autres en-têtes | `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (caméra, micro, géolocalisation coupés), `Cross-Origin-Opener-Policy: same-origin` — `next.config.ts` |
 | CSRF | Server actions Next.js (vérification d'origine) ; cookies Better Auth `SameSite=Lax` |
 | Injection SQL | Prisma (requêtes paramétrées) ; les quelques requêtes SQL écrites à la main (file d'attente, purge, limites) utilisent les gabarits paramétrés de Prisma, jamais de concaténation |
+| Formulaire public de demande d'accès | Valeurs validées par Zod puis stockées et affichées comme du texte ; l'adresse de site saisie n'est jamais visitée (pas de SSRF) ; **aucun e-mail envoyé à l'adresse saisie** (le formulaire ne peut pas servir à écrire à un tiers) ; seuls les propriétaires (`OWNER_EMAILS`) sont prévenus, sans donnée saisie dans l'objet de l'e-mail ; liste réservée au propriétaire (`/settings/demandes-acces`, vérifié côté serveur) ; suppression automatique après 12 mois |
 | Ressources externes | Aucune : polices servies par l'application, QR code de double authentification généré sur le serveur |
 
 ## 5. Crawler (récupération des sites audités)
@@ -81,6 +82,7 @@ Toute requête passe par `safeFetch` (`server/crawler/safe-fetch.ts`) :
 | Mot de passe oublié | 10 / h par IP, 3 / h par adresse |
 | E-mail de confirmation | 3 / h par utilisateur |
 | Suppression de compte | 5 / 15 min par utilisateur |
+| Demande d'accès (formulaire public, sans compte) | 5 / h par IP, 3 / 24 h par adresse ; doublon de la même adresse dans les 24 h ignoré ; champ piège anti-robots — `server/services/access-requests.ts` |
 | Audits | 20 / 24 h par utilisateur (sauf propriétaire), un seul en cours par projet |
 | Module IA | `AI_MAX_QUERIES_PER_RUN` (10) et `AI_MAX_QUERIES_PER_DAY` (50) ; coût estimé et accepté avant chaque mesure |
 

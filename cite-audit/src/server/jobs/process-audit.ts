@@ -1,7 +1,10 @@
 import "server-only";
+import { getServerEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/db";
 import { crawlSite, type CrawlOptions, type SiteCrawl } from "@/server/crawler";
+import { sendEmail, type OutgoingEmail } from "@/server/email/send";
+import { auditFinishedEmail } from "@/server/email/templates";
 import { reportProgress } from "@/server/jobs/queue";
 import { scoreSite, type ScoringContext } from "@/server/scoring";
 import { saveAuditResult } from "@/server/services/audit-results";
@@ -9,6 +12,10 @@ import { saveAuditResult } from "@/server/services/audit-results";
 export type ProcessDeps = {
   /** Exploration du site (remplaçable dans les tests). */
   crawl?: (url: string, options: CrawlOptions) => Promise<SiteCrawl>;
+  /** Envoi de l'e-mail « audit terminé » (remplaçable dans les tests). */
+  sendEmail?: (email: OutgoingEmail) => Promise<{ ok: boolean }>;
+  /** Adresse publique de l'application, pour le lien du rapport. */
+  appUrl?: string;
 };
 
 type Snapshot = ScoringContext & { siteUrl: string };
@@ -67,12 +74,49 @@ export async function processAudit(auditId: string, deps: ProcessDeps = {}): Pro
     });
     logger.info("audit.processed", { auditId, pages: crawl.pages.length, score: result.scoreTotal });
   } catch (error) {
-    // updateMany : ne lève pas d'erreur si le projet (et donc l'audit) a été supprimé entre-temps.
-    const { count } = await prisma.audit.updateMany({
+    await markFailed(auditId, error);
+    return;
+  }
+  await notifyAuditFinished(auditId, deps);
+}
+
+async function markFailed(auditId: string, error: unknown) {
+  // updateMany : ne lève pas d'erreur si le projet (et donc l'audit) a été supprimé entre-temps.
+  const { count } = await prisma.audit.updateMany({
+    where: { id: auditId },
+    data: { status: "FAILED", finishedAt: new Date(), errorCode: "INTERNAL" },
+  });
+  if (count === 0) logger.info("audit.deleted_during_processing", { auditId });
+  else logger.error("audit.process_failed", { auditId, error });
+}
+
+/**
+ * Prévient l'utilisateur que son audit est terminé. Un échec d'envoi est journalisé
+ * mais ne change jamais le résultat de l'audit.
+ */
+async function notifyAuditFinished(auditId: string, deps: ProcessDeps): Promise<void> {
+  try {
+    const audit = await prisma.audit.findUnique({
       where: { id: auditId },
-      data: { status: "FAILED", finishedAt: new Date(), errorCode: "INTERNAL" },
+      select: {
+        status: true,
+        isDemo: true,
+        scoreTotal: true,
+        projectId: true,
+        project: { select: { companyName: true, user: { select: { name: true, email: true } } } },
+      },
     });
-    if (count === 0) logger.info("audit.deleted_during_processing", { auditId });
-    else logger.error("audit.process_failed", { auditId, error });
+    if (!audit || audit.isDemo || (audit.status !== "SUCCEEDED" && audit.status !== "PARTIAL")) return;
+    const appUrl = deps.appUrl ?? getServerEnv().BETTER_AUTH_URL;
+    const content = auditFinishedEmail({
+      name: audit.project.user.name,
+      companyName: audit.project.companyName,
+      score: audit.scoreTotal,
+      url: `${appUrl.replace(/\/$/, "")}/projects/${audit.projectId}/audits/${auditId}`,
+    });
+    const { ok } = await (deps.sendEmail ?? sendEmail)({ to: audit.project.user.email, ...content });
+    if (!ok) logger.error("audit.notify_failed", { auditId });
+  } catch (error) {
+    logger.error("audit.notify_failed", { auditId, error });
   }
 }

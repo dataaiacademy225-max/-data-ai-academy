@@ -70,3 +70,55 @@ export function verifyEmailEmail(input: { name: string; url: string; validity: s
     html: layout(paragraphs, { url: input.url, label: "Confirmer mon adresse" }, `${footer} — ${SIGNATURE}`),
   };
 }
+
+export function auditFinishedEmail(input: {
+  name: string;
+  companyName: string;
+  /** null : score global non vérifié (données insuffisantes). */
+  score: number | null;
+  url: string;
+}): EmailContent {
+  const scoreLine =
+    input.score === null
+      ? "Le score global n'a pas pu être calculé : certaines pages n'ont pas pu être analysées. Le rapport détaille ce qui a été mesuré et ce qui ne l'a pas été."
+      : `Score CITE : ${input.score} / 100. C'est un indicateur interne ${PUBLISHER_BRAND}, calculé sur les signaux observables de votre site : ce n'est pas une mesure de Google ni d'une IA.`;
+  const paragraphs = [
+    `Bonjour ${input.name},`,
+    `L'audit CITE du site de ${input.companyName} est terminé.`,
+    scoreLine,
+    "Le rapport classe les actions par priorité, avec la preuve observée pour chaque constat.",
+  ];
+  const footer = "Résultat non garanti : les recommandations peuvent renforcer la compréhension de votre marque, sans promesse de position ni de citation.";
+  return {
+    subject: `Audit terminé : ${input.companyName}`,
+    text: [...paragraphs, `Lien : ${input.url}`, footer, SIGNATURE].join("\n\n"),
+    html: layout(paragraphs, { url: input.url, label: "Voir le rapport" }, `${footer} — ${SIGNATURE}`),
+  };
+}
+
+/** Prévient le propriétaire d'une nouvelle demande d'accès. Toutes les valeurs sont saisies par un inconnu : échappées. */
+export function accessRequestEmail(input: {
+  name: string;
+  email: string;
+  company: string | null;
+  siteUrl: string | null;
+  message: string | null;
+  url: string;
+}): EmailContent {
+  const paragraphs = [
+    `Nouvelle demande d'accès à ${APP_NAME}.`,
+    `Nom : ${input.name}`,
+    `E-mail : ${input.email}`,
+    `Entreprise : ${input.company ?? "non renseignée"}`,
+    `Site : ${input.siteUrl ?? "non renseigné"}`,
+    `Message : ${input.message ?? "aucun"}`,
+    "Pour l'inviter, ajoutez son adresse à SIGNUP_ALLOWED_EMAILS sur Render, puis répondez-lui avec le lien d'inscription.",
+  ];
+  const footer = "Ces informations ont été saisies dans le formulaire public : vérifiez-les avant d'y donner suite.";
+  return {
+    // Le nom saisi n'entre pas dans l'objet : un en-tête d'e-mail ne doit contenir aucune donnée non fiable.
+    subject: `Nouvelle demande d'accès à ${APP_NAME}`,
+    text: [...paragraphs, `Toutes les demandes : ${input.url}`, footer, SIGNATURE].join("\n\n"),
+    html: layout(paragraphs, { url: input.url, label: "Voir les demandes" }, `${footer} — ${SIGNATURE}`),
+  };
+}

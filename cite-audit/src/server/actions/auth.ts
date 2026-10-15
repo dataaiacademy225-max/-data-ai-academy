@@ -74,7 +74,7 @@ export async function signUpAction(_prev: AuthFormState, formData: FormData): Pr
   }
 
   if (!isSignupAllowed(parsed.data.email)) {
-    return { error: "Les inscriptions se font sur invitation pour le moment. Contactez Data & AI Academy pour obtenir un accès.", values };
+    return { error: "Les inscriptions se font sur invitation pour le moment. Faites une demande depuis la page « Demander un accès ».", values };
   }
 
   const requestHeaders = await headers();

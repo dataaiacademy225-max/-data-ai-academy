@@ -10,7 +10,7 @@ const { prisma } = await import("@/lib/db");
 
 beforeEach(async () => {
   // Les suppressions en cascade vident projets, audits, pages, problèmes et résultats IA ; puis les limites anti-abus.
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "user", "verification", "rateLimit", "ActionLimit" CASCADE');
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE "user", "verification", "rateLimit", "ActionLimit", "AccessRequest" CASCADE');
 });
 
 afterAll(async () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
+import type { OutgoingEmail } from "@/server/email/send";
 import type { SiteCrawl } from "@/server/crawler";
 import { processAudit } from "@/server/jobs/process-audit";
 import { claimNextAudit } from "@/server/jobs/queue";
@@ -75,14 +76,50 @@ describe("processAudit", () => {
     expect(await prisma.pageAnalysis.count({ where: { auditId } })).toBe(4);
   });
 
+  it("prévient l'utilisateur par e-mail avec le score et le lien du rapport", async () => {
+    const auditId = await claimedAudit();
+    const sent: OutgoingEmail[] = [];
+    await processAudit(auditId, {
+      crawl: async () => fakeCrawl,
+      appUrl: "https://audit.exemple.com/",
+      sendEmail: async (email) => {
+        sent.push(email);
+        return { ok: true };
+      },
+    });
+    const audit = await prisma.audit.findUniqueOrThrow({ where: { id: auditId }, include: { project: { include: { user: true } } } });
+    expect(sent).toHaveLength(1);
+    expect(sent[0].to).toBe(audit.project.user.email);
+    expect(sent[0].text).toContain(`https://audit.exemple.com/projects/${audit.projectId}/audits/${auditId}`);
+    expect(sent[0].text).toContain(`${audit.scoreTotal} / 100`);
+  });
+
+  it("un échec d'envoi de l'e-mail ne change pas le résultat de l'audit", async () => {
+    const auditId = await claimedAudit();
+    await processAudit(auditId, {
+      crawl: async () => fakeCrawl,
+      appUrl: "https://audit.exemple.com",
+      sendEmail: async () => {
+        throw new Error("SMTP indisponible");
+      },
+    });
+    expect((await prisma.audit.findUniqueOrThrow({ where: { id: auditId } })).status).toBe("SUCCEEDED");
+  });
+
   it("erreur imprévue : audit en échec, aucun résultat inventé", async () => {
     const auditId = await claimedAudit();
+    const sent: OutgoingEmail[] = [];
     await processAudit(auditId, {
       crawl: async () => {
         throw new Error("panne");
       },
+      sendEmail: async (email) => {
+        sent.push(email);
+        return { ok: true };
+      },
     });
     expect(await prisma.audit.findUniqueOrThrow({ where: { id: auditId } })).toMatchObject({ status: "FAILED", errorCode: "INTERNAL", scoreTotal: null });
+    expect(sent).toEqual([]);
   });
 
   it("projet supprimé pendant l'analyse : aucune exception (le worker continue)", async () => {

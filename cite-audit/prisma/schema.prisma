@@ -321,3 +321,21 @@ model TwoFactor {
   @@index([userId])
   @@map("twoFactor")
 }
+
+// ─── Demandes d'accès (page publique /demande-acces) ─────────────
+
+/// Demande envoyée depuis le formulaire public. Supprimée automatiquement après 12 mois (services/retention.ts).
+model AccessRequest {
+  id        String    @id @default(cuid())
+  name      String
+  email     String
+  company   String?
+  siteUrl   String?
+  message   String?
+  createdAt DateTime  @default(now())
+  /// Date à laquelle le propriétaire a marqué la demande comme traitée.
+  handledAt DateTime?
+
+  @@index([createdAt])
+  @@index([email, createdAt])
+}
