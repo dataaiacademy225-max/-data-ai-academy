@@ -101,7 +101,7 @@ export function ProofSection() {
                 <p className="text-[#c9d1dd]">{proof.aiObservation}</p>
                 <p className="mt-2 text-xs text-muted-foreground">
                   {proof.aiObservationNote}
-                  {proof.aiTestDate && <> Tests réalisés le {proof.aiTestDate}.</>}
+                  {proof.aiTestPeriod && <> Tests réalisés {proof.aiTestPeriod}.</>}
                 </p>
               </div>
 
