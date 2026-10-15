@@ -48,7 +48,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           </Link>
         </div>
         <div className="flex-1 overflow-y-auto px-3 py-4">
-          <NavLinks variant="sidebar" projects={projects} />
+          <NavLinks variant="sidebar" projects={projects} owner={owner} />
         </div>
         <div className="space-y-3 border-t border-border/70 p-4">
           <div className="flex min-w-0 items-center gap-3">
@@ -83,7 +83,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="px-4">
-            <NavLinks variant="bar" />
+            <NavLinks variant="bar" owner={owner} />
           </div>
         </header>
         {!user.emailVerified && <VerifyEmailBanner action={resendVerificationEmailAction} />}

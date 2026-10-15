@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { LaunchAuditForm } from "@/components/report/launch-audit-form";
+import { ScoreTrendCard } from "@/components/report/score-trend";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireUser } from "@/lib/session";
 import { COUNTRIES } from "@/lib/validation/countries";
 import { launchAuditAction } from "@/server/actions/audits";
+import { buildScoreTrend } from "@/server/report/trend";
 import { listAudits } from "@/server/services/audits";
 import { getProject } from "@/server/services/projects";
 
@@ -90,6 +92,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
           Mesure indicative.
         </p>
       </Link>
+
+      <ScoreTrendCard trend={buildScoreTrend(audits)} />
 
       <section className="space-y-3">
         <h2 className="font-display text-xl font-semibold">Historique des audits</h2>

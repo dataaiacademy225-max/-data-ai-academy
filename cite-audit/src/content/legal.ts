@@ -104,13 +104,14 @@ export function legalPages(params: LegalParams): Record<LegalSlug, LegalPage> {
             "Projets : nom de l'entreprise, adresse du site, secteur, pays, ville, cible, concurrents et requêtes que vous saisissez.",
             "Résultats d'audit : informations publiques relevées sur les pages analysées (titres, textes, liens, extraits). Ces pages peuvent contenir des coordonnées publiées par le site lui-même.",
             "Mesures de visibilité IA (module facultatif) : les requêtes envoyées et les réponses complètes reçues.",
-            "Sécurité : compteurs de tentatives (connexion, inscription, mot de passe oublié) et journaux techniques dont les adresses e-mail, liens et jetons sont masqués.",
+            "Demande d'accès (formulaire public) : nom, adresse e-mail, et si vous les indiquez, entreprise, adresse du site et message. L'adresse du site n'est ni visitée ni analysée.",
+            "Sécurité : compteurs de tentatives (connexion, inscription, mot de passe oublié, demande d'accès) et journaux techniques dont les adresses e-mail, liens et jetons sont masqués.",
           ],
         },
         {
           title: "Pourquoi nous utilisons ces données",
           paragraphs: [
-            "Fournir le service (création du compte, audits, rapports, mesures IA), sécuriser l'accès (limites de tentatives, détection d'abus) et vous envoyer les e-mails indispensables (confirmation d'adresse, changement de mot de passe). Aucune donnée n'est vendue ni utilisée pour de la publicité.",
+            "Fournir le service (création du compte, audits, rapports, mesures IA), sécuriser l'accès (limites de tentatives, détection d'abus) et vous envoyer les e-mails indispensables (confirmation d'adresse, changement de mot de passe, fin d'audit), et étudier les demandes d'accès. Aucune donnée n'est vendue ni utilisée pour de la publicité.",
           ],
         },
         {
@@ -118,6 +119,7 @@ export function legalPages(params: LegalParams): Record<LegalSlug, LegalPage> {
           paragraphs: ["Chaque traitement repose sur une base prévue par la loi :"],
           list: [
             "Exécution du contrat (les conditions d'utilisation) : compte, projets, audits, mesures IA, e-mails de service.",
+            "Mesures précontractuelles prises à votre demande, avec votre accord : traitement des demandes d'accès.",
             "Intérêt légitime : sécurité du service (limites de tentatives, journaux techniques, prévention des abus).",
             "Obligation légale : conservation des factures et données comptables, lorsque des services payants seront proposés.",
           ],
@@ -132,6 +134,7 @@ export function legalPages(params: LegalParams): Record<LegalSlug, LegalPage> {
             historyRetention("Mesures de visibilité IA et réponses reçues", params.aiRunRetentionDays, "la dernière mesure de chaque projet est toujours gardée."),
             "Sessions de connexion : 7 jours au plus. Lien de changement de mot de passe : 1 heure. Lien de confirmation d'adresse : 24 heures.",
             "Double authentification : clé et codes de secours conservés jusqu'à sa désactivation ou la suppression du compte. Vérification du code après le mot de passe : 10 minutes au plus.",
+            "Demandes d'accès : 12 mois après leur envoi, puis suppression automatique.",
             "Compteurs de tentatives : 24 heures au plus.",
             "Copies de sauvegarde de la base, chiffrées : 30 jours, puis suppression automatique. Une donnée que vous supprimez peut donc subsister jusqu'à 30 jours dans ces copies, sans être utilisée.",
           ],

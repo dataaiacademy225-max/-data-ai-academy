@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getEmailEnv } from "@/lib/env";
-import { inactivityWarningEmail, resetPasswordEmail, verifyEmailEmail } from "@/server/email/templates";
+import { accessRequestEmail, auditFinishedEmail, inactivityWarningEmail, resetPasswordEmail, verifyEmailEmail } from "@/server/email/templates";
 import { findForbiddenWording } from "@/server/scoring/wording-guard";
 
 const url = "https://app.exemple.com/reset-password?token=abc";
@@ -22,6 +22,37 @@ describe("gabarits d'e-mails", () => {
       for (const text of [email.subject, email.text, email.html]) expect(findForbiddenWording(text)).toEqual([]);
     });
   }
+
+  it("fin d'audit : score présenté comme indicateur interne, données saisies échappées, aucune promesse", () => {
+    const link = "https://app.exemple.com/projects/p1/audits/a1";
+    const scored = auditFinishedEmail({ name: "Awa", companyName: "<b>Cabinet</b>", score: 89, url: link });
+    expect(scored.text).toContain("89 / 100");
+    expect(scored.text).toContain("indicateur interne");
+    expect(scored.text).toContain("Résultat non garanti");
+    expect(scored.html).toContain(link);
+    expect(scored.html).not.toContain("<b>Cabinet</b>");
+    const unscored = auditFinishedEmail({ name: "Awa", companyName: "Cabinet", score: null, url: link });
+    expect(unscored.text).toContain("n'a pas pu être calculé");
+    expect(unscored.text).not.toMatch(/\/ 100/);
+    for (const email of [scored, unscored]) {
+      for (const text of [email.subject, email.text, email.html]) expect(findForbiddenWording(text)).toEqual([]);
+    }
+  });
+
+  it("demande d'accès : valeurs saisies échappées, jamais dans l'objet", () => {
+    const email = accessRequestEmail({
+      name: '<img src=x onerror="alert(1)">',
+      email: "a@b.co",
+      company: null,
+      siteUrl: "https://exemple.com/",
+      message: "Bonjour\nSubject: piège",
+      url: "https://app.exemple.com/settings/demandes-acces",
+    });
+    expect(email.subject).toBe("Nouvelle demande d'accès à GriotCite");
+    expect(email.html).not.toContain("<img");
+    expect(email.text).toContain("Entreprise : non renseignée");
+    for (const text of [email.subject, email.text, email.html]) expect(findForbiddenWording(text)).toEqual([]);
+  });
 
   it("échappe aussi un lien contenant des guillemets", () => {
     const email = verifyEmailEmail({ name: "A", url: 'https://x.com/?a="><b>', validity: "24 heures" });

@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import type { RetentionEnv } from "@/lib/env";
+import { purgeAccessRequests } from "@/server/services/access-requests";
 import { purgeExpiredLimits } from "@/server/services/rate-limit";
 
 const DAY_MS = 86_400_000;
@@ -11,11 +12,13 @@ export type PurgeReport = {
   limits: number;
   audits: number;
   aiRuns: number;
+  accessRequests: number;
 };
 
 /**
  * Purge des données dont la durée de conservation est dépassée (lancée par le worker une fois par jour).
- * - sessions et jetons de vérification expirés, compteurs anti-abus de plus de 24 h : toujours ;
+ * - sessions et jetons de vérification expirés, compteurs anti-abus de plus de 24 h,
+ *   demandes d'accès de plus de 12 mois : toujours ;
  * - audits et mesures IA plus anciens que la durée choisie, sauf le plus récent de chaque projet,
  *   pour qu'un projet garde toujours son dernier rapport ;
  * - jamais un travail en attente ou en cours, jamais les données de démonstration (gérées par le seed).
@@ -51,5 +54,7 @@ export async function purgeExpiredData(
         AND r."id" NOT IN (SELECT DISTINCT ON ("projectId") "id" FROM "AiVisibilityRun" ORDER BY "projectId", "queuedAt" DESC)`;
   }
 
-  return { sessions, verifications, limits, audits, aiRuns };
+  const accessRequests = await purgeAccessRequests(now);
+
+  return { sessions, verifications, limits, audits, aiRuns, accessRequests };
 }

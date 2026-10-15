@@ -95,7 +95,10 @@ export function AuthForm({
           </>
         ) : (
           <>
-            Pas encore de compte ? <Link className="font-medium text-foreground underline" href="/signup">Créer un compte</Link>
+            Pas encore invité ? <Link className="font-medium text-foreground underline" href="/demande-acces">Demander un accès</Link>
+            <span className="mt-1 block">
+              Déjà invité ? <Link className="underline" href="/signup">Créer mon compte</Link>
+            </span>
           </>
         )}
       </p>

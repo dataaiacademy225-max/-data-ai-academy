@@ -12,7 +12,7 @@ export const LANDING = {
     lead:
       "ChatGPT, Perplexity et Gemini répondent désormais à la place d'une liste de liens. GriotCite audite les signaux observables de votre site qui peuvent renforcer la compréhension de votre marque par ces assistants et par Google, puis vous dit quoi corriger en premier.",
     disclaimer: "Résultat non garanti : une méthode transparente, pas une promesse.",
-    ctaGuest: "Tester GriotCite",
+    ctaGuest: "Demander un accès",
     ctaUser: "Ouvrir mon tableau de bord",
     secondary: "Voir la méthode",
     access: "Accès sur invitation pendant la phase pilote.",

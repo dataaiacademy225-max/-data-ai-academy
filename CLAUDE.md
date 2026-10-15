@@ -69,6 +69,8 @@ Migrations : `prisma migrate dev` refuse de tourner en non-interactif dès qu'il
 | `server/report/view.ts` | Présentation du rapport (pure) : diagnostic, deux questions (être trouvé / convertir), ordre des priorités, responsable de chaque action, « ce que le rapport ne mesure pas ». Ne change jamais le score. |
 | `server/jobs/`, `worker/` | File d'attente des audits (`queue.ts`), traitement (`process-audit.ts`), boucle du worker (`loop.ts`), lancée par `pnpm worker` ou dans le serveur web si `RUN_WORKER_IN_WEB=true` (`instrumentation.ts`, hébergement gratuit Render + Neon, `render.yaml`). |
 | `server/ai-visibility/` | Module facultatif : `types.ts` (AiProvider), `providers/`, `analyze.ts` (pur), `summary.ts` et `geo-metrics.ts` (purs : taux de mention, citations, part de voix sur l'échantillon, « non mesurée » sans concurrent suivi), `queue.ts`, `process-run.ts`. |
+| `app/(auth)/demande-acces`, `server/services/access-requests.ts`, `app/(app)/settings/demandes-acces` | Demande d'accès publique : enregistrée (12 mois), propriétaires prévenus par e-mail, aucun e-mail à l'adresse saisie ; liste réservée au propriétaire. |
+| `server/report/trend.ts` | Évolution du score d'un projet (pure) : audits notés du barème le plus récent, écart avec l'audit précédent. |
 | `server/demo/` | Données de démonstration. |
 | `server/email/` | Gabarits (purs) et envoi : `EMAIL_TRANSPORT` = console (dev), smtp, memory (tests). |
 | `content/legal.ts`, `app/(legal)` | Pages légales (brouillon) ; coordonnées de l'éditeur à compléter dans `LEGAL_ENTITY`. |
@@ -110,7 +112,7 @@ Tests (`cite-audit/tests`) : `unit/` (pur, crawler sur serveur local), `integrat
   - audits : 20 par utilisateur sur 24 h, un seul en cours par projet ;
   - IA : `AI_MAX_QUERIES_PER_RUN` et `AI_MAX_QUERIES_PER_DAY` ;
   - crawl : 15 pages, 0,5 s entre deux pages, 2 min 30 au plus ;
-  - tentatives (connexion, double authentification, inscription, mot de passe oublié, suppression de compte) : `services/rate-limit.ts`, en base, clés hachées. Les server actions appellent Better Auth directement et contournent sa propre limite HTTP : toute nouvelle action sensible doit appeler `consumeLimit`.
+  - tentatives (connexion, double authentification, inscription, mot de passe oublié, suppression de compte, demande d'accès) : `services/rate-limit.ts`, en base, clés hachées. Les server actions appellent Better Auth directement et contournent sa propre limite HTTP : toute nouvelle action sensible doit appeler `consumeLimit`.
 - **En-têtes** : CSP stricte avec nonce (aucun script en ligne ni `eval` en production), HSTS, `frame-ancestors 'none'`. Ne pas ajouter de ressource externe sans adapter `lib/csp.ts`.
 - **Sauvegardes** : copie chiffrée (AES-256) de la base chaque nuit par GitHub Actions (`.github/workflows/db-backup.yml`), conservée 30 jours ; restauration dans une base neuve uniquement (`db-restore.yml`). Procédure : `cite-audit/docs/BACKUP.md`.
 - **Conservation** : purge quotidienne par le worker (`services/retention.ts`, `AUDIT_RETENTION_DAYS`, `AI_RUN_RETENTION_DAYS`, 0 = tant que le projet existe). Comptes inactifs (`services/inactive-accounts.ts`) : e-mail après 3 ans sans connexion, suppression 30 jours plus tard ; jamais de suppression si l'e-mail n'est pas parti. Toute nouvelle donnée stockée doit avoir une durée et figurer dans `content/legal.ts`.
