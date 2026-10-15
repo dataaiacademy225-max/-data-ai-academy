@@ -8,6 +8,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { estimateCost, formatUsd, PRICES_AS_OF } from "@/lib/ai-pricing";
 import { parseGeoQueryLines } from "@/lib/validation/project";
+import { agree, plural } from "@/lib/plural";
 
 type ProviderInfo = { id: string; label: string; models: { id: string; label: string }[]; defaultModel: string };
 
@@ -62,7 +63,7 @@ export function AiLaunchForm({
 
       <div aria-live="polite" className="rounded-md border border-border bg-muted p-3 text-sm">
         <p>
-          <strong>{count}</strong> requête(s) · coût estimé{" "}
+          <strong>{count}</strong> {agree(count, "requête", "requêtes")} · coût estimé{" "}
           {estimate.known ? (
             <strong>
               entre {formatUsd(estimate.minUsd)} et {formatUsd(estimate.maxUsd)}
@@ -73,7 +74,7 @@ export function AiLaunchForm({
         </p>
         <p className="text-xs text-muted-foreground">
           Estimation indicative fondée sur les tarifs publics relevés en {PRICES_AS_OF} ; le coût réel dépend de la longueur
-          des réponses et des recherches effectuées. Il reste {remainingToday} requête(s) disponible(s) sur 24 h.
+          des réponses et des recherches effectuées. Il reste {plural(remainingToday, "requête disponible", "requêtes disponibles")} sur 24 h.
         </p>
         {tooMany && <p className="mt-1 text-xs text-destructive">Trop de requêtes pour ce lancement ou pour la limite quotidienne.</p>}
       </div>

@@ -170,3 +170,7 @@ export const linkEvidence = (links: LinkFact[], label: string): Evidence[] =>
 export function share(ok: number, total: number): number {
   return total === 0 ? 0 : ok / total;
 }
+
+
+// Accord en nombre des textes (« 1 page », « 12 pages »).
+export { agree, plural } from "@/lib/plural";

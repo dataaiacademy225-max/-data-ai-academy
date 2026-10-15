@@ -62,7 +62,7 @@ describe("processAudit", () => {
     const criteria = Object.values(report.pillars).flatMap((p) => p.criteria);
     // Données multi-pages désormais mesurées :
     expect(criteria.find((c) => c.code === "I3")?.status).toBe("PASS"); // sitemap
-    expect(criteria.find((c) => c.code === "I12")?.explanation).toMatch(/1 lien\(s\) cassé/);
+    expect(criteria.find((c) => c.code === "I12")?.explanation).toMatch(/1 lien cassé sur/);
     expect(criteria.find((c) => c.code === "E2")?.status).toBe("PASS"); // formulaire de la page contact
     expect(audit.progress).toMatchObject({ phase: "done", pagesDone: 4 });
   });

@@ -12,6 +12,7 @@ import { requireUser } from "@/lib/session";
 import type { PageRole, Pillar } from "@/server/scoring/types";
 import { buildReportView, metaFor, OWNER_LABEL } from "@/server/report/view";
 import { getAuditReport } from "@/server/services/audits";
+import { agree, plural } from "@/lib/plural";
 
 export const metadata: Metadata = { title: "Rapport d'audit" };
 
@@ -231,7 +232,7 @@ export default async function AuditReportPage({ params }: { params: Promise<{ pr
             </div>
             {skipped > 0 && (
               <p className="text-sm text-muted-foreground">
-                {skipped} page(s) sélectionnée(s) n&apos;ont pas été analysées : la durée maximale de l&apos;audit a été atteinte.
+                {plural(skipped, "page sélectionnée", "pages sélectionnées")} {agree(skipped, "n'a pas été analysée", "n'ont pas été analysées")} : la durée maximale de l&apos;audit a été atteinte.
               </p>
             )}
             {report.notVerified.length > 0 && (

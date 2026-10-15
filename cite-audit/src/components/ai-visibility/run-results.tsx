@@ -1,6 +1,7 @@
 import type { AiQueryResult, AiVisibilityRun } from "@/generated/prisma/client";
 import { formatUsd } from "@/lib/ai-pricing";
 import { cn } from "@/lib/utils";
+import { agree } from "@/lib/plural";
 
 type Run = AiVisibilityRun & { results: AiQueryResult[] };
 type Source = { url: string; title?: string; origin: "API" | "TEXT" };
@@ -105,13 +106,13 @@ export function RunResults({ run }: { run: Run }) {
         </div>
         {active && progress?.total ? (
           <p className="text-sm text-muted-foreground">
-            {progress.done ?? 0} / {progress.total} requête(s) traitée(s)
+            {progress.done ?? 0} / {progress.total} {agree(progress.total, "requête traitée", "requêtes traitées")}
             {progress.waitingMs ? ` · limite du fournisseur atteinte, nouvel essai dans ${Math.ceil(progress.waitingMs / 1000)} s` : ""}
           </p>
         ) : null}
         {answered.length > 0 && (
           <p className="text-sm">
-            Sur cet échantillon de <strong>{answered.length}</strong> réponse(s) : marque mentionnée dans <strong>{count("brandMentioned")}</strong>,
+            Sur cet échantillon de <strong>{answered.length}</strong> {agree(answered.length, "réponse", "réponses")} : marque mentionnée dans <strong>{count("brandMentioned")}</strong>,
             citée en source dans <strong>{count("brandCited")}</strong>, recommandée explicitement dans <strong>{count("brandRecommended")}</strong>.
           </p>
         )}
