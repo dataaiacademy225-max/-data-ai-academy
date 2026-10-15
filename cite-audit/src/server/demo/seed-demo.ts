@@ -115,61 +115,93 @@ export async function seedDemo(prisma: PrismaClient, signUp: SignUp, password: s
   // Mesure de visibilité IA de démonstration : réponses FICTIVES (aucun appel à une IA), lues par le vrai analyseur.
   const brand = { name: "Cabinet Exemple Conseil", url: DEMO_SITE_URL };
   const competitors = [{ name: "Concurrent A", url: null }, { name: "Concurrent B", url: "https://www.example.org/" }];
-  const demoAnswers = [
+  const Q1 = "Quel cabinet de conseil en data choisir à Abidjan ?";
+  const Q2 = "Meilleur consultant data pour PME en Côte d'Ivoire";
+  const brandSource = { url: "https://www.example.com/", title: "[DÉMO] Cabinet Exemple Conseil", origin: "API" as const };
+  const competitorSource = { url: "https://www.example.org/", title: "[DÉMO] Concurrent B", origin: "API" as const };
+  type DemoAnswer = { query: string; text: string; sources: (typeof brandSource | typeof competitorSource)[] };
+  // Quatre lancements hebdomadaires FICTIFS, pour illustrer la chronologie du tableau de bord.
+  const demoRuns: { daysAgo: number; answers: DemoAnswer[] }[] = [
     {
-      query: "Quel cabinet de conseil en data choisir à Abidjan ?",
-      text: `${TAG} Réponse fictive. Plusieurs cabinets interviennent à Abidjan :\n1. Concurrent A, spécialisé en tableaux de bord.\n2. Cabinet Exemple Conseil, qui accompagne les PME (https://www.example.com/).\n3. Concurrent B.`,
-      sources: [{ url: "https://www.example.com/", title: "[DÉMO] Cabinet Exemple Conseil", origin: "API" as const }],
+      daysAgo: 21,
+      answers: [
+        { query: Q1, text: `${TAG} Réponse fictive. À Abidjan, on cite souvent Concurrent A et Concurrent B.`, sources: [competitorSource] },
+        { query: Q2, text: `${TAG} Réponse fictive. Concurrent A propose des offres adaptées aux PME.`, sources: [] },
+      ],
     },
     {
-      query: "Meilleur consultant data pour PME en Côte d'Ivoire",
-      text: `${TAG} Réponse fictive. Je recommande Concurrent A pour les PME qui débutent avec leurs données.`,
-      sources: [{ url: "https://www.example.org/", title: "[DÉMO] Concurrent B", origin: "API" as const }],
+      daysAgo: 14,
+      answers: [
+        { query: Q1, text: `${TAG} Réponse fictive. Plusieurs acteurs existent : Concurrent A, Cabinet Exemple Conseil et Concurrent B.`, sources: [competitorSource] },
+        { query: Q2, text: `${TAG} Réponse fictive. Concurrent B accompagne des PME ivoiriennes.`, sources: [competitorSource] },
+      ],
+    },
+    {
+      daysAgo: 7,
+      answers: [
+        { query: Q1, text: `${TAG} Réponse fictive. Cabinet Exemple Conseil (https://www.example.com/) et Concurrent A interviennent à Abidjan.`, sources: [brandSource] },
+        { query: Q2, text: `${TAG} Réponse fictive. Concurrent A et Concurrent B sont actifs auprès des PME.`, sources: [] },
+      ],
+    },
+    {
+      daysAgo: 0,
+      answers: [
+        {
+          query: Q1,
+          text: `${TAG} Réponse fictive. Plusieurs cabinets interviennent à Abidjan :\n1. Concurrent A, spécialisé en tableaux de bord.\n2. Cabinet Exemple Conseil, qui accompagne les PME (https://www.example.com/).\n3. Concurrent B.`,
+          sources: [brandSource],
+        },
+        { query: Q2, text: `${TAG} Réponse fictive. Je recommande Concurrent A pour les PME qui débutent avec leurs données.`, sources: [competitorSource] },
+      ],
     },
   ];
-  await prisma.aiVisibilityRun.create({
-    data: {
-      projectId: project.id,
-      isDemo: true,
-      status: "SUCCEEDED",
-      provider: "PERPLEXITY",
-      model: "perplexity/sonar",
-      queryCount: demoAnswers.length,
-      estimatedCostMinUsd: 0,
-      estimatedCostMaxUsd: 0,
-      startedAt: now,
-      finishedAt: now,
-      progress: { done: demoAnswers.length, total: demoAnswers.length },
-      inputSnapshot: { demo: true, brand, competitors },
-      results: {
-        create: demoAnswers.map((a, position) => {
-          const analysis = analyzeResponse(a.text, a.sources, brand, competitors);
-          return {
-            position,
-            query: a.query,
-            status: "SUCCEEDED" as const,
-            attempts: 1,
-            provider: "PERPLEXITY" as const,
-            requestedModel: "perplexity/sonar",
-            model: "demo-model",
-            askedAt: now,
-            rawResponse: a.text,
-            rawPayload: { demo: true },
-            sources: analysis.sources,
-            brandDetected: analysis.brand.detectedAs,
-            brandMentioned: analysis.brand.mentioned,
-            brandCited: analysis.brand.cited,
-            brandRecommended: analysis.brand.recommended,
-            approxPosition: analysis.brand.approxPosition,
-            positionRatio: analysis.brand.positionRatio,
-            brandExcerpt: analysis.brand.excerpt,
-            competitorsMentioned: analysis.competitors,
-            confidence: analysis.confidence,
-          };
-        }),
+  for (const { daysAgo, answers } of demoRuns) {
+    const at = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+    await prisma.aiVisibilityRun.create({
+      data: {
+        projectId: project.id,
+        isDemo: true,
+        status: "SUCCEEDED",
+        provider: "PERPLEXITY",
+        model: "perplexity/sonar",
+        queryCount: answers.length,
+        estimatedCostMinUsd: 0,
+        estimatedCostMaxUsd: 0,
+        queuedAt: at,
+        startedAt: at,
+        finishedAt: at,
+        progress: { done: answers.length, total: answers.length },
+        inputSnapshot: { demo: true, brand, competitors },
+        results: {
+          create: answers.map((a, position) => {
+            const analysis = analyzeResponse(a.text, a.sources, brand, competitors);
+            return {
+              position,
+              query: a.query,
+              status: "SUCCEEDED" as const,
+              attempts: 1,
+              provider: "PERPLEXITY" as const,
+              requestedModel: "perplexity/sonar",
+              model: "demo-model",
+              askedAt: at,
+              rawResponse: a.text,
+              rawPayload: { demo: true },
+              sources: analysis.sources,
+              brandDetected: analysis.brand.detectedAs,
+              brandMentioned: analysis.brand.mentioned,
+              brandCited: analysis.brand.cited,
+              brandRecommended: analysis.brand.recommended,
+              approxPosition: analysis.brand.approxPosition,
+              positionRatio: analysis.brand.positionRatio,
+              brandExcerpt: analysis.brand.excerpt,
+              competitorsMentioned: analysis.competitors,
+              confidence: analysis.confidence,
+            };
+          }),
+        },
       },
-    },
-  });
+    });
+  }
 
   return { userId };
 }
