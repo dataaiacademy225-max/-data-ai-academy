@@ -14,7 +14,9 @@ describe("page d'accueil", () => {
   });
 
   it("rappelle l'absence de garantie, la nature interne du score et signale l'exemple fictif", () => {
-    expect(LANDING.hero.disclaimer).toContain("non garanti");
+    expect(LANDING.hero.transparency).toContain("n'est garantie");
+    const { titleStart, titleHighlight, titleEnd } = LANDING.hero;
+    expect(`${titleStart} ${titleHighlight} ${titleEnd}`).toBe("Découvrez pourquoi votre marque est peu visible dans Google et les IA");
     expect(LANDING.method.note).toContain("indicateur interne");
     expect(LANDING.preview.badge).toContain("[DÉMO]");
   });
