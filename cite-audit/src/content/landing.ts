@@ -27,6 +27,34 @@ export const LANDING = {
     company: "Cabinet exemple",
     sample: "Échantillon de 12 réponses : 5 mentions, 2 citations, 1 recommandation.",
   },
+  // Preuve : audit interne réel du site de Data & AI Academy (rapport GriotCite du 15 octobre 2026).
+  // Valeurs recopiées du rapport, jamais estimées. À mettre à jour à chaque nouvel audit publié ici.
+  proof: {
+    badge: "Audit interne",
+    title: `${APP_NAME} testé sur son propre site`,
+    score: 89,
+    site: "data-ai-academy.com",
+    auditDate: "15 octobre 2026",
+    pagesAnalyzed: 15,
+    scoringVersion: "cite-1.1.0",
+    pillars: [
+      { label: "Clarifier", value: 17.5, max: 25 },
+      { label: "Indexer", value: 27.5, max: 30 },
+      { label: "Tunnel", value: 25, max: 25 },
+      { label: "Enclencher", value: 18.5, max: 20 },
+    ],
+    summary: "89/100 lors d'un audit interne de Data & AI Academy.",
+    scoreNote: "Indicateur interne Data & AI Academy, calculé par la méthode CITE : ce n'est pas une note de Google ni de ChatGPT.",
+    aiObservation:
+      "Lors de tests réalisés sur plusieurs requêtes, Data & AI Academy a également été recommandée dans certaines réponses de Google AI et ChatGPT.",
+    aiObservationNote: `Tests manuels, distincts du score CITE : ${APP_NAME} n'interroge aujourd'hui que Perplexity, par son API officielle.`,
+    /** Date des tests manuels dans les IA : null tant qu'elle n'est pas connue (rien n'est affiché, rien n'est inventé). */
+    aiTestDate: null as string | null,
+    transparency:
+      "Résultat observé à une date donnée. Les réponses peuvent varier selon la requête, la date, le modèle et la localisation. Ce score ne constitue pas une garantie de classement ou de recommandation.",
+    cta: "Voir l'exemple de rapport",
+    ctaNote: "L'exemple de rapport utilise des données fictives, signalées « [DÉMO] ».",
+  },
   why: {
     title: "Pourquoi la GEO change la donne",
     lead: "Les assistants IA résument le web en une seule réponse. Ce qu'ils retiennent de vous dépend de ce qu'ils peuvent lire et vérifier.",

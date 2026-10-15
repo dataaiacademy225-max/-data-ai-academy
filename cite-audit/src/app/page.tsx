@@ -16,6 +16,7 @@ import {
 import { BrandName } from "@/components/brand-name";
 import { LandingGlow } from "@/components/landing/landing-glow";
 import { ProductPreview } from "@/components/landing/product-preview";
+import { ProofSection } from "@/components/landing/proof-section";
 import { LegalLinks } from "@/components/legal/legal-document";
 import { FadeIn, Stagger, StaggerItem } from "@/components/premium/fade-in";
 import { Magnetic } from "@/components/premium/magnetic";
@@ -181,6 +182,9 @@ export default async function Home() {
             ))}
           </Stagger>
         </section>
+
+        {/* Preuve : audit interne */}
+        <ProofSection />
 
         {/* Pourquoi */}
         <Section title={LANDING.why.title} lead={LANDING.why.lead}>
