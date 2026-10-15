@@ -86,3 +86,32 @@ export async function getAuditReport(userId: string, auditId: string) {
   // Durée d'attente calculée ici (et non pendant le rendu) pour l'affichage de la progression.
   return { audit, project: audit.project, report, queuedForMs: Date.now() - audit.queuedAt.getTime() };
 }
+
+/**
+ * Derniers audits notés de l'utilisateur, du plus ancien au plus récent, pour le graphique du tableau de bord.
+ * Projets réels seulement s'il en existe ; sinon la démonstration. Jamais les deux mélangés.
+ */
+export async function getScoreHistory(userId: string, limit = 12) {
+  const select = {
+    id: true,
+    scoreTotal: true,
+    finishedAt: true,
+    isDemo: true,
+    project: { select: { companyName: true } },
+  } as const;
+  const where = (isDemo: boolean) => ({
+    isDemo,
+    scoreTotal: { not: null },
+    finishedAt: { not: null },
+    project: { userId },
+  });
+  let audits = await prisma.audit.findMany({ where: where(false), orderBy: { finishedAt: "desc" }, take: limit, select });
+  if (audits.length === 0) {
+    audits = await prisma.audit.findMany({ where: where(true), orderBy: { finishedAt: "desc" }, take: limit, select });
+  }
+  return audits.reverse().flatMap((audit) =>
+    audit.scoreTotal !== null && audit.finishedAt
+      ? [{ id: audit.id, score: audit.scoreTotal, finishedAt: audit.finishedAt, isDemo: audit.isDemo, companyName: audit.project.companyName }]
+      : [],
+  );
+}

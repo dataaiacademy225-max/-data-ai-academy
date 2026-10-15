@@ -59,7 +59,8 @@ Migrations : `prisma migrate dev` refuse de tourner en non-interactif dès qu'il
 | `app/(auth)`, `app/(app)` | Pages publiques (connexion, inscription) et protégées (tableau de bord, projets et leurs paramètres, rapport, visibilité IA, `settings/account`). |
 | `app/api/auth/[...all]` | Point d'entrée Better Auth. |
 | `proxy.ts` | Redirection rapide sans cookie (pas le contrôle d'accès) et CSP avec nonce par requête (`lib/csp.ts`). |
-| `components/ui`, `components/report`, `components/ai-visibility` | Interface. Aucune logique métier. |
+| `app/page.tsx`, `components/landing/`, `content/landing.ts` | Page d'accueil publique (textes dans `content/landing.ts`, testés par le garde-fou de formulation ; aperçu fictif marqué « [DÉMO] »). |
+| `components/ui`, `components/report`, `components/ai-visibility`, `components/premium`, `components/app-shell` | Interface. Aucune logique métier. `app-shell` : navigation latérale (grand écran) et barre du haut (mobile). |
 | `lib/` | `env.ts` (variables validées), `db.ts`, `auth.ts`, `session.ts` (`requireUser`), `access.ts` (inscriptions sur invitation ; droits propriétaire = adresse dans `OWNER_EMAILS`, confirmée, et double authentification active), `logger.ts`, `csp.ts`, `client-ip.ts`, `ai-pricing.ts`, `validation/`. |
 | `server/actions/` | Server actions : `requireUser()`, validation Zod, appel d'un service. |
 | `server/services/` | Accès aux données, toujours filtré par `userId`. Suppression de projet ou de compte : en cascade en base (`projects.ts`, `account.ts`). Verrous de requête : `locks.ts`. |
@@ -67,7 +68,7 @@ Migrations : `prisma migrate dev` refuse de tourner en non-interactif dès qu'il
 | `server/scoring/` | Moteur CITE **pur** : `scoreSite(input)`. Barème et textes dans `catalog.ts`, une règle par critère dans `criteria/`. |
 | `server/report/view.ts` | Présentation du rapport (pure) : diagnostic, deux questions (être trouvé / convertir), ordre des priorités, responsable de chaque action, « ce que le rapport ne mesure pas ». Ne change jamais le score. |
 | `server/jobs/`, `worker/` | File d'attente des audits (`queue.ts`), traitement (`process-audit.ts`), boucle du worker (`loop.ts`), lancée par `pnpm worker` ou dans le serveur web si `RUN_WORKER_IN_WEB=true` (`instrumentation.ts`, hébergement gratuit Render + Neon, `render.yaml`). |
-| `server/ai-visibility/` | Module facultatif : `types.ts` (AiProvider), `providers/`, `analyze.ts` (pur), `queue.ts`, `process-run.ts`. |
+| `server/ai-visibility/` | Module facultatif : `types.ts` (AiProvider), `providers/`, `analyze.ts` (pur), `summary.ts` et `geo-metrics.ts` (purs : taux de mention, citations, part de voix sur l'échantillon, « non mesurée » sans concurrent suivi), `queue.ts`, `process-run.ts`. |
 | `server/demo/` | Données de démonstration. |
 | `server/email/` | Gabarits (purs) et envoi : `EMAIL_TRANSPORT` = console (dev), smtp, memory (tests). |
 | `content/legal.ts`, `app/(legal)` | Pages légales (brouillon) ; coordonnées de l'éditeur à compléter dans `LEGAL_ENTITY`. |

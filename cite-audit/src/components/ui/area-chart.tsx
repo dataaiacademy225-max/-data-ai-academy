@@ -22,7 +22,8 @@ import { cn } from "@/lib/utils";
 
 export type ChartColor = "chart-1" | "chart-2" | "chart-3";
 
-type Row = Record<string, string | number>;
+/** Une valeur null laisse un trou dans la courbe (donnée non mesurée). */
+type Row = Record<string, string | number | null>;
 
 type AreaChartProps = {
   data: Row[];
@@ -31,7 +32,10 @@ type AreaChartProps = {
   /** Clés des séries affichées. */
   categories: string[];
   colors?: ChartColor[];
+  /** Utilisable seulement depuis un composant client ; depuis le serveur, passer `unit`. */
   valueFormatter?: (value: number) => string;
+  /** Unité ajoutée après chaque valeur (ex. " %"). */
+  unit?: string;
   /** Description du graphique pour les lecteurs d'écran. */
   label: string;
   showLegend?: boolean;
@@ -47,13 +51,15 @@ export function AreaChart({
   index,
   categories,
   colors = DEFAULT_COLORS,
-  valueFormatter = (value) => String(value),
+  valueFormatter: customFormatter,
+  unit = "",
   label,
   showLegend = true,
   yDomain,
   className,
 }: AreaChartProps) {
   const id = useId().replace(/:/g, "");
+  const valueFormatter = customFormatter ?? ((value: number) => `${value}${unit}`);
   const colorOf = (i: number) => colors[i % colors.length];
 
   return (
@@ -78,7 +84,7 @@ export function AreaChart({
               tickMargin={8}
             />
             <YAxis
-              width={44}
+              width={unit ? 56 : 44}
               tickLine={false}
               axisLine={false}
               domain={yDomain ?? ["auto", "auto"]}
@@ -109,15 +115,16 @@ export function AreaChart({
                 strokeWidth={2}
                 fill={`url(#${id}-${i})`}
                 dot={false}
-                activeDot={{ r: 4 }}
+                activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--background)" }}
                 isAnimationActive={false}
               />
             ))}
           </RechartsAreaChart>
         </ResponsiveContainer>
       </div>
-      {/* Mêmes données en tableau, pour les lecteurs d'écran. */}
-      <table className="sr-only">
+      {/* Mêmes données en tableau, pour les lecteurs d'écran (enveloppe : un tableau sr-only déborderait sur mobile). */}
+      <div className="sr-only">
+        <table>
         <caption>{label}</caption>
         <thead>
           <tr>
@@ -135,13 +142,14 @@ export function AreaChart({
               <th scope="row">{row[index]}</th>
               {categories.map((category) => (
                 <td key={category}>
-                  {typeof row[category] === "number" ? valueFormatter(row[category]) : row[category]}
+                  {typeof row[category] === "number" ? valueFormatter(row[category]) : (row[category] ?? "non mesuré")}
                 </td>
               ))}
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
     </figure>
   );
 }
@@ -154,7 +162,7 @@ function ChartTooltip({
 }: TooltipContentProps & { valueFormatter: (value: number) => string }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-md border border-border bg-card px-3 py-2 text-sm text-card-foreground shadow-md">
+    <div className="rounded-md border border-border bg-card/95 px-3 py-2 text-sm text-card-foreground shadow-lg backdrop-blur">
       <p className="mb-1 font-medium">{label}</p>
       <ul className="space-y-0.5">
         {payload.map((entry) => (
@@ -162,7 +170,7 @@ function ChartTooltip({
             <span className="size-2 rounded-full" style={{ backgroundColor: entry.color }} aria-hidden="true" />
             <span className="text-muted-foreground">{entry.name}</span>
             <span className="ml-auto font-medium tabular-nums">
-              {typeof entry.value === "number" ? valueFormatter(entry.value) : entry.value}
+              {typeof entry.value === "number" ? valueFormatter(entry.value) : "non mesuré"}
             </span>
           </li>
         ))}

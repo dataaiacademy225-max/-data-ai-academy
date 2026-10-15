@@ -50,6 +50,17 @@ describe("seed de démonstration", () => {
     for (const f of audit.findings) expect(f.observation.startsWith("[DÉMO]")).toBe(true);
   });
 
+  it("crée un historique de lancements IA fictifs, tous marqués démo", async () => {
+    await seedDemo(prisma, fakeSignUp, "mot-de-passe-demo");
+    const runs = await prisma.aiVisibilityRun.findMany({ include: { results: true }, orderBy: { finishedAt: "asc" } });
+    expect(runs.length).toBeGreaterThanOrEqual(2);
+    for (const run of runs) {
+      expect(run.isDemo).toBe(true);
+      for (const r of run.results) expect(r.rawResponse?.startsWith("[DÉMO]")).toBe(true);
+    }
+    expect(new Set(runs.map((r) => r.finishedAt?.toISOString())).size).toBe(runs.length);
+  });
+
   it("refuse de s'exécuter si le compte démo possède un projet réel", async () => {
     const demoUser = await createUser(DEMO_EMAIL);
     await createProject(demoUser.id, projectInput());

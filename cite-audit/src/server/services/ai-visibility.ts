@@ -4,6 +4,7 @@ import { getAiEnv } from "@/lib/env";
 import { prisma } from "@/lib/db";
 import type { Competitor } from "@/lib/validation/project";
 import { describeProviders } from "@/server/ai-visibility/providers";
+import { computeGeoMetrics } from "@/server/ai-visibility/geo-metrics";
 import { summarizeAiSamples } from "@/server/ai-visibility/summary";
 import type { Prisma } from "@/generated/prisma/client";
 import { QUEUED_STALE_MS } from "@/server/services/audits";
@@ -131,8 +132,11 @@ export async function getAiVisibility(userId: string, projectId: string) {
   return { project, runs, usedToday: await queriesUsedToday(userId) };
 }
 
-/** Synthèse des échantillons de réponses d'IA de l'utilisateur (requêtes réussies), pour le tableau de bord. */
-export async function getAiSampleSummary(userId: string) {
+/**
+ * Échantillons de réponses d'IA de l'utilisateur (requêtes réussies), pour le tableau de bord :
+ * synthèse par assistant et métriques GEO (taux de mention, citations, part de voix, chronologie).
+ */
+export async function getAiDashboard(userId: string) {
   const rows = await prisma.aiQueryResult.findMany({
     where: { status: "SUCCEEDED", run: { project: { userId } } },
     select: {
@@ -140,11 +144,12 @@ export async function getAiSampleSummary(userId: string) {
       brandMentioned: true,
       brandCited: true,
       brandRecommended: true,
-      run: { select: { isDemo: true } },
+      competitorsMentioned: true,
+      run: { select: { id: true, isDemo: true, queuedAt: true, finishedAt: true } },
     },
     take: 5000,
   });
-  return summarizeAiSamples(
+  const summary = summarizeAiSamples(
     rows.map((row) => ({
       provider: row.provider,
       isDemo: row.run.isDemo,
@@ -153,4 +158,16 @@ export async function getAiSampleSummary(userId: string) {
       brandRecommended: row.brandRecommended,
     })),
   );
+  const geo = computeGeoMetrics(
+    rows.map((row) => ({
+      runId: row.run.id,
+      runDate: row.run.finishedAt ?? row.run.queuedAt,
+      isDemo: row.run.isDemo,
+      brandMentioned: row.brandMentioned,
+      brandCited: row.brandCited,
+      brandRecommended: row.brandRecommended,
+      competitorsMentioned: row.competitorsMentioned,
+    })),
+  );
+  return { summary, geo };
 }
