@@ -104,7 +104,7 @@ export function legalPages(params: LegalParams): Record<LegalSlug, LegalPage> {
             "Projets : nom de l'entreprise, adresse du site, secteur, pays, ville, cible, concurrents et requêtes que vous saisissez.",
             "Résultats d'audit : informations publiques relevées sur les pages analysées (titres, textes, liens, extraits). Ces pages peuvent contenir des coordonnées publiées par le site lui-même.",
             "Mesures de visibilité IA (module facultatif) : les requêtes envoyées et les réponses complètes reçues.",
-            "Demande d'accès (formulaire public) : nom, adresse e-mail, et si vous les indiquez, entreprise, adresse du site et message. L'adresse du site n'est ni visitée ni analysée.",
+            "Demande d'accès (formulaire public) : nom, adresse e-mail, et si vous les indiquez, entreprise, adresse du site, message et centre d'intérêt principal ; la provenance du lien suivi (réseau social et publication, par exemple « linkedin »), sans cookie ni traceur. L'adresse du site n'est ni visitée ni analysée.",
             "Sécurité : compteurs de tentatives (connexion, inscription, mot de passe oublié, demande d'accès) et journaux techniques dont les adresses e-mail, liens et jetons sont masqués.",
           ],
         },

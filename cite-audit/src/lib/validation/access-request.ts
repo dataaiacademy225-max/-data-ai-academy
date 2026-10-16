@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ACCESS_INTEREST_VALUES, normalizeTrackingParam } from "@/lib/acquisition";
 
 /**
  * Formulaire public de demande d'accès. Toutes les valeurs sont des données non fiables :
@@ -39,6 +40,14 @@ export const accessRequestSchema = z.object({
   company: optionalText(120, "Entreprise"),
   siteUrl,
   message: optionalText(1000, "Message"),
+  // Facultatif : une seule réponse, ou aucune.
+  interest: z
+    .union([z.enum(ACCESS_INTEREST_VALUES, "Choix invalide."), z.literal("")])
+    .optional()
+    .transform((v) => v || null),
+  // Provenance (champs cachés remplis depuis le lien) : une valeur inattendue est ignorée, jamais une erreur.
+  source: z.string().optional().transform(normalizeTrackingParam),
+  campaign: z.string().optional().transform(normalizeTrackingParam),
   consent: z.literal("on", { error: "Cochez la case pour accepter le traitement de votre demande." }),
 });
 

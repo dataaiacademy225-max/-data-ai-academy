@@ -95,6 +95,24 @@ export const LANDING = {
     ],
     note: "Aujourd'hui : Perplexity, par son API officielle. ChatGPT et Gemini ne sont pas encore interrogés. Coût estimé et accepté avant chaque lancement.",
   },
+  // Annonce honnête : rien de ceci n'existe encore. Marqué « Bientôt », sans date ni promesse.
+  upcoming: {
+    badge: "Bientôt",
+    title: "En préparation",
+    lead: "Ce que nous construisons maintenant. Vos réponses à la demande d'accès décident de l'ordre.",
+    items: [
+      {
+        title: "Suivi dans ChatGPT, Gemini et Perplexity",
+        text: "Vos questions clés posées à intervalles réguliers, pour suivre dans le temps les mentions, citations et recommandations sur un échantillon de réponses.",
+      },
+      {
+        title: "Connexion à Google Search Console",
+        text: "Vos données Google (requêtes, impressions, clics) à côté de l'audit, avec votre autorisation et en lecture seule.",
+      },
+    ],
+    note: "Pas encore disponible, sans date fixée. Ces outils mesureront un échantillon et des signaux, jamais votre visibilité globale : résultat non garanti.",
+    cta: "Dites-nous ce qui vous intéresse",
+  },
   limits: {
     title: "Ce que GriotCite ne mesure pas",
     lead: "Un bon diagnostic dit aussi ce qu'il ne voit pas.",

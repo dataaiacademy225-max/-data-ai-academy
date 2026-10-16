@@ -1,3 +1,4 @@
+import { interestLabel, sourceLabel } from "@/lib/acquisition";
 import { APP_NAME, APP_NAME_PARTS, PUBLISHER_BRAND } from "@/lib/brand";
 
 /**
@@ -103,6 +104,9 @@ export function accessRequestEmail(input: {
   company: string | null;
   siteUrl: string | null;
   message: string | null;
+  interest: string | null;
+  source: string | null;
+  campaign: string | null;
   url: string;
 }): EmailContent {
   const paragraphs = [
@@ -112,6 +116,8 @@ export function accessRequestEmail(input: {
     `Entreprise : ${input.company ?? "non renseignée"}`,
     `Site : ${input.siteUrl ?? "non renseigné"}`,
     `Message : ${input.message ?? "aucun"}`,
+    `Intérêt principal : ${interestLabel(input.interest)}`,
+    `Provenance : ${sourceLabel(input.source)}${input.campaign ? ` (${input.campaign})` : ""}`,
     "Pour l'inviter, ajoutez son adresse à SIGNUP_ALLOWED_EMAILS sur Render, puis répondez-lui avec le lien d'inscription.",
   ];
   const footer = "Ces informations ont été saisies dans le formulaire public : vérifiez-les avant d'y donner suite.";

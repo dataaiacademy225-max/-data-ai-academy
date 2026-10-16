@@ -3,7 +3,10 @@ import { prisma } from "@/lib/db";
 import type { OutgoingEmail } from "@/server/email/send";
 import { purgeAccessRequests, submitAccessRequest } from "@/server/services/access-requests";
 
-const input = { name: "Awa Koné", email: "awa@exemple-test.com", company: "Cabinet Awa", siteUrl: "https://cabinet-awa.ci/", message: null };
+const input = {
+  name: "Awa Koné", email: "awa@exemple-test.com", company: "Cabinet Awa", siteUrl: "https://cabinet-awa.ci/", message: null,
+  interest: null, source: null, campaign: null,
+};
 
 function deps(sent: OutgoingEmail[], now = new Date("2026-10-15T10:00:00Z")) {
   return {
@@ -24,6 +27,18 @@ describe("demandes d'accès", () => {
     expect(await prisma.accessRequest.count()).toBe(1);
     expect(sent.map((e) => e.to)).toEqual(["proprio@exemple-test.com"]);
     expect(sent[0].text).toContain("https://audit.exemple.com/settings/demandes-acces");
+  });
+
+  it("conserve l'intérêt principal et la provenance, et les signale au propriétaire", async () => {
+    const sent: OutgoingEmail[] = [];
+    await submitAccessRequest(
+      { ...input, interest: "AI_TRACKING", source: "linkedin", campaign: "post-1" },
+      "203.0.113.1",
+      deps(sent),
+    );
+    expect(await prisma.accessRequest.findFirstOrThrow()).toMatchObject({ interest: "AI_TRACKING", source: "linkedin", campaign: "post-1" });
+    expect(sent[0].text).toContain("Intérêt principal : Suivi dans ChatGPT et Gemini");
+    expect(sent[0].text).toContain("Provenance : LinkedIn (post-1)");
   });
 
   it("ne duplique pas une demande renvoyée dans les 24 h, sans le révéler", async () => {

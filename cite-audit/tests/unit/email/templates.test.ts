@@ -46,11 +46,16 @@ describe("gabarits d'e-mails", () => {
       company: null,
       siteUrl: "https://exemple.com/",
       message: "Bonjour\nSubject: piège",
+      interest: null,
+      source: "<b>x</b>",
+      campaign: null,
       url: "https://app.exemple.com/settings/demandes-acces",
     });
     expect(email.subject).toBe("Nouvelle demande d'accès à GriotCite");
     expect(email.html).not.toContain("<img");
     expect(email.text).toContain("Entreprise : non renseignée");
+    expect(email.text).toContain("Intérêt principal : Non précisé");
+    expect(email.html).not.toContain("<b>");
     for (const text of [email.subject, email.text, email.html]) expect(findForbiddenWording(text)).toEqual([]);
   });
 

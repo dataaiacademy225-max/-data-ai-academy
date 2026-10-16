@@ -14,6 +14,22 @@ describe("formulaire de demande d'accès", () => {
     expect(accessRequestSchema.safeParse({ ...base, siteUrl: "pas une adresse" }).success).toBe(false);
   });
 
+  it("intérêt facultatif, limité aux choix proposés", () => {
+    expect(accessRequestSchema.parse(base).interest).toBeNull();
+    expect(accessRequestSchema.parse({ ...base, interest: "" }).interest).toBeNull();
+    expect(accessRequestSchema.parse({ ...base, interest: "SEARCH_CONSOLE" }).interest).toBe("SEARCH_CONSOLE");
+    expect(accessRequestSchema.safeParse({ ...base, interest: "AUTRE" }).success).toBe(false);
+  });
+
+  it("provenance nettoyée : une valeur inattendue est ignorée sans bloquer l'envoi", () => {
+    expect(accessRequestSchema.parse({ ...base, source: " LinkedIn ", campaign: "post-1" })).toMatchObject({
+      source: "linkedin",
+      campaign: "post-1",
+    });
+    const odd = accessRequestSchema.parse({ ...base, source: "<script>", campaign: "x".repeat(41) });
+    expect(odd).toMatchObject({ source: null, campaign: null });
+  });
+
   it("exige l'accord et limite la longueur du message", () => {
     expect(accessRequestSchema.safeParse({ ...base, consent: "" }).success).toBe(false);
     expect(accessRequestSchema.safeParse({ ...base, message: "x".repeat(1001) }).success).toBe(false);
