@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { CheckCircle2Icon } from "lucide-react";
 import { useActionState } from "react";
+import { ACCESS_INTEREST_LABELS, ACCESS_INTEREST_VALUES, type Tracking } from "@/lib/acquisition";
 import type { AccessRequestFormState } from "@/server/actions/access-request";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
@@ -11,8 +12,10 @@ import { Textarea } from "@/components/ui/textarea";
 
 export function AccessRequestForm({
   action,
+  tracking,
 }: {
   action: (prev: AccessRequestFormState, formData: FormData) => Promise<AccessRequestFormState>;
+  tracking: Tracking;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   const errors = state.fieldErrors ?? {};
@@ -67,9 +70,40 @@ export function AccessRequestForm({
           aria-invalid={!!errors.siteUrl}
         />
       </FormField>
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">
+          Qu&apos;est-ce qui vous intéresse le plus ? <span className="font-normal text-muted-foreground">(facultatif)</span>
+        </legend>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {ACCESS_INTEREST_VALUES.map((value) => (
+            <label
+              key={value}
+              className="flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-sm transition-colors has-[:checked]:border-accent/70 has-[:checked]:bg-accent/10"
+            >
+              <input
+                type="radio"
+                name="interest"
+                value={value}
+                defaultChecked={state.values?.interest === value}
+                className="size-4 accent-[#ff7a29]"
+              />
+              {ACCESS_INTEREST_LABELS[value]}
+            </label>
+          ))}
+        </div>
+        {errors.interest?.map((message) => (
+          <p key={message} className="text-xs text-destructive" role="alert">
+            {message}
+          </p>
+        ))}
+      </fieldset>
       <FormField id="message" label="Votre besoin" optional errors={errors.message}>
         <Textarea id="message" name="message" rows={3} maxLength={1000} defaultValue={state.values?.message} aria-invalid={!!errors.message} />
       </FormField>
+
+      {/* Provenance du lien cliqué : aucune donnée personnelle, seulement le réseau et la publication. */}
+      <input type="hidden" name="source" value={state.values?.source || tracking.source || ""} />
+      <input type="hidden" name="campaign" value={state.values?.campaign || tracking.campaign || ""} />
 
       {/* Champ piège pour les robots : invisible et ignoré par les lecteurs d'écran. */}
       <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">

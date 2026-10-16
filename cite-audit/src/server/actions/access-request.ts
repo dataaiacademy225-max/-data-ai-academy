@@ -19,7 +19,7 @@ export type AccessRequestFormState = {
   values?: Record<string, string>;
 };
 
-const FIELDS = ["name", "email", "company", "siteUrl", "message"] as const;
+const FIELDS = ["name", "email", "company", "siteUrl", "message", "interest", "source", "campaign"] as const;
 
 export async function requestAccessAction(_prev: AccessRequestFormState, formData: FormData): Promise<AccessRequestFormState> {
   const read = (key: string) => {

@@ -325,14 +325,26 @@ model TwoFactor {
 // ─── Demandes d'accès (page publique /demande-acces) ─────────────
 
 /// Demande envoyée depuis le formulaire public. Supprimée automatiquement après 12 mois (services/retention.ts).
+enum AccessInterest {
+  SITE_AUDIT
+  AI_TRACKING
+  SEARCH_CONSOLE
+  COMPETITORS
+}
+
 model AccessRequest {
-  id        String    @id @default(cuid())
+  id        String          @id @default(cuid())
   name      String
   email     String
   company   String?
   siteUrl   String?
   message   String?
-  createdAt DateTime  @default(now())
+  /// Ce qui intéresse le plus la personne (question facultative du formulaire).
+  interest  AccessInterest?
+  /// Provenance d'après le lien suivi (`utm_source`, `utm_campaign`), nettoyée.
+  source    String?
+  campaign  String?
+  createdAt DateTime        @default(now())
   /// Date à laquelle le propriétaire a marqué la demande comme traitée.
   handledAt DateTime?
 

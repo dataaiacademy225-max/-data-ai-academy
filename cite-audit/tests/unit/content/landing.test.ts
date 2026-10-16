@@ -21,6 +21,13 @@ describe("page d'accueil", () => {
     expect(LANDING.preview.badge).toContain("[DÉMO]");
   });
 
+  it("section « En préparation » : annoncée comme à venir, sans date ni promesse", () => {
+    const { upcoming } = LANDING;
+    expect(upcoming.badge).toBe("Bientôt");
+    expect(upcoming.note).toContain("Pas encore disponible");
+    expect(upcoming.note).toContain("non garanti");
+  });
+
   it("section de preuve : audit interne daté, score interne, aucune généralisation", () => {
     const { proof } = LANDING;
     expect(proof.badge).toBe("Audit interne");

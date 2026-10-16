@@ -2,10 +2,13 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   ArrowRightIcon,
+  ClockIcon,
   EyeOffIcon,
   FileTextIcon,
   FileSearchIcon,
+  LineChartIcon,
   LinkIcon,
+  RadarIcon,
   MessageSquareQuoteIcon,
   ScanEyeIcon,
   ShieldCheckIcon,
@@ -23,6 +26,7 @@ import { Magnetic } from "@/components/premium/magnetic";
 import { SpotlightCard } from "@/components/premium/spotlight-card";
 import { buttonVariants } from "@/components/ui/button";
 import { LANDING } from "@/content/landing";
+import { readTracking, withTracking } from "@/lib/acquisition";
 import { getCurrentUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { DEFAULT_MAX_PAGES } from "@/server/crawler/discover";
@@ -32,15 +36,22 @@ import type { Pillar } from "@/server/scoring/types";
 const PILLAR_LETTERS: Record<Pillar, string> = { CLARIFIER: "C", INDEXER: "I", TUNNEL: "T", ENCLENCHER: "E" };
 const WHY_ICONS = [MessageSquareQuoteIcon, SparklesIcon, ScanEyeIcon];
 const LEVEL_ICONS = [FileSearchIcon, LinkIcon, ThumbsUpIcon];
+const UPCOMING_ICONS = [RadarIcon, LineChartIcon];
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const user = await getCurrentUser();
+  // Un lien de publication peut pointer vers l'accueil : la provenance suit jusqu'au formulaire.
+  const accessHref = withTracking("/demande-acces", readTracking(await searchParams));
   const cta = user
     ? { href: "/dashboard", label: LANDING.hero.ctaUser }
-    : { href: "/demande-acces", label: LANDING.hero.ctaGuest };
+    : { href: accessHref, label: LANDING.hero.ctaGuest };
   // Hero : « Auditer mon site » mène à la création d'un audit (nouveau projet) ;
   // sans compte, l'accès étant sur invitation, il ouvre la demande d'accès.
-  const auditHref = user ? "/projects/new" : "/demande-acces";
+  const auditHref = user ? "/projects/new" : accessHref;
   const pillars = Object.keys(PILLARS) as Pillar[];
 
   const facts = [
@@ -260,6 +271,47 @@ export default async function Home() {
           </Stagger>
           <FadeIn>
             <p className="mt-6 text-sm text-muted-foreground">{LANDING.sample.note}</p>
+          </FadeIn>
+        </Section>
+
+        {/* En préparation : annonce, rien de mesuré */}
+        <Section id="preparation" title={LANDING.upcoming.title} lead={LANDING.upcoming.lead}>
+          <Stagger className="grid gap-4 md:grid-cols-2">
+            {LANDING.upcoming.items.map((item, i) => {
+              const Icon = UPCOMING_ICONS[i];
+              return (
+                <StaggerItem key={item.title} className="min-w-0">
+                  <SpotlightCard className="border-dashed p-6">
+                    <div className="flex items-center justify-between gap-3">
+                      <IconTile>
+                        <Icon className="size-5" aria-hidden="true" />
+                      </IconTile>
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/60 bg-accent/15 px-2.5 py-0.5 text-xs font-semibold">
+                        <ClockIcon className="size-3.5 text-accent" aria-hidden="true" />
+                        {LANDING.upcoming.badge}
+                      </span>
+                    </div>
+                    <h3 className="mt-5 font-display text-lg font-semibold">{item.title}</h3>
+                    <p className="mt-2 text-sm text-muted-foreground">{item.text}</p>
+                  </SpotlightCard>
+                </StaggerItem>
+              );
+            })}
+          </Stagger>
+          <FadeIn className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="max-w-2xl text-sm text-muted-foreground">{LANDING.upcoming.note}</p>
+            {!user && (
+              <Link
+                href={accessHref}
+                className={cn(
+                  buttonVariants({ variant: "outline" }),
+                  "h-auto min-h-10 shrink-0 rounded-full border-white/15 bg-transparent px-5 py-2 hover:bg-white/[0.05]",
+                )}
+              >
+                {LANDING.upcoming.cta}
+                <ArrowRightIcon className="size-4" aria-hidden="true" />
+              </Link>
+            )}
           </FadeIn>
         </Section>
 
