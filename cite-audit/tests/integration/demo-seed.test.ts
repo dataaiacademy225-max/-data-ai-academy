@@ -43,11 +43,21 @@ describe("seed de démonstration", () => {
 
   it("calcule l'audit de démonstration avec le vrai moteur, textes marqués [DÉMO]", async () => {
     await seedDemo(prisma, fakeSignUp, "mot-de-passe-demo");
-    const audit = await prisma.audit.findFirstOrThrow({ where: { isDemo: true }, include: { findings: true } });
+    const audit = await prisma.audit.findFirstOrThrow({ where: { isDemo: true, comparisonId: null }, include: { findings: true } });
     expect(audit.scoringVersion).toMatch(/^cite-/);
     expect(audit.scoreTotal).not.toBeNull();
     expect(audit.findings.length).toBeGreaterThan(0);
     for (const f of audit.findings) expect(f.observation.startsWith("[DÉMO]")).toBe(true);
+
+    // Comparaison de démonstration : sites concurrents fictifs, notés par le vrai moteur, marqués [DÉMO].
+    const comparison = await prisma.comparison.findFirstOrThrow({ include: { audits: true } });
+    expect(comparison.isDemo).toBe(true);
+    expect(comparison.audits.length).toBe(2);
+    for (const a of comparison.audits) {
+      expect(a.isDemo).toBe(true);
+      expect(a.competitorName).toMatch(/^\[DÉMO\]/);
+      expect(a.competitorUrl).toMatch(/example\.org/);
+    }
   });
 
   it("crée un historique de lancements IA fictifs, tous marqués démo", async () => {

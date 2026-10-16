@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { extractPageFacts } from "@/server/crawler/extract";
 import { analyzeResponse } from "@/server/ai-visibility/analyze";
-import { DEMO_HOME_HTML, DEMO_SITE_URL } from "@/server/demo/demo-site";
+import { DEMO_COMPETITORS, DEMO_HOME_HTML, DEMO_SITE_URL } from "@/server/demo/demo-site";
 import { scoreSite, type PageInput } from "@/server/scoring";
 import { saveAuditResult } from "@/server/services/audit-results";
 
@@ -48,7 +48,7 @@ export async function seedDemo(prisma: PrismaClient, signUp: SignUp, password: s
       country: "CI",
       city: "Abidjan",
       primaryTarget: "Dirigeants de PME B2B",
-      competitors: [{ name: `${TAG} Concurrent A` }, { name: `${TAG} Concurrent B`, url: "https://www.example.org/" }],
+      competitors: DEMO_COMPETITORS.map((c) => ({ name: `${TAG} ${c.name}`, url: c.url })),
       geoQueries: ["Quel cabinet de conseil en data choisir à Abidjan ?"],
       ownershipAttestedAt: new Date(),
     },
@@ -111,6 +111,48 @@ export async function seedDemo(prisma: PrismaClient, signUp: SignUp, password: s
     },
   });
   await prisma.$transaction((tx) => saveAuditResult(tx, audit.id, pages, result, { textPrefix: `${TAG} ` }));
+
+  // Comparaison de démonstration : le vrai moteur appliqué à deux pages concurrentes FICTIVES (aucun appel réseau).
+  const comparison = await prisma.comparison.create({ data: { projectId: project.id, isDemo: true, notifiedAt: now } });
+  for (const competitor of DEMO_COMPETITORS) {
+    const competitorPages: PageInput[] = [
+      {
+        role: "home",
+        url: competitor.url,
+        ok: true,
+        analysis: {
+          requestedUrl: competitor.url,
+          finalUrl: competitor.url,
+          httpStatus: 200,
+          redirectChain: [],
+          contentType: "text/html; charset=utf-8",
+          bytes: competitor.html.length,
+          fetchMs: 0,
+          xRobotsTag: null,
+          robotsTxt: "ALLOWED",
+          facts: extractPageFacts(competitor.html, competitor.url),
+        },
+      },
+    ];
+    const competitorResult = scoreSite({ context: { ...context, companyName: competitor.name }, pages: competitorPages, site: {} });
+    const competitorAudit = await prisma.audit.create({
+      data: {
+        projectId: project.id,
+        isDemo: true,
+        comparisonId: comparison.id,
+        competitorName: `${TAG} ${competitor.name}`,
+        competitorUrl: competitor.url,
+        status: "RUNNING",
+        scoringVersion: competitorResult.scoringVersion,
+        queuedAt: now,
+        startedAt: now,
+        inputSnapshot: { demo: true, ...context, siteUrl: competitor.url, companyName: competitor.name },
+      },
+    });
+    await prisma.$transaction((tx) =>
+      saveAuditResult(tx, competitorAudit.id, competitorPages, competitorResult, { textPrefix: `${TAG} ` }),
+    );
+  }
 
   // Mesure de visibilité IA de démonstration : réponses FICTIVES (aucun appel à une IA), lues par le vrai analyseur.
   const brand = { name: "Cabinet Exemple Conseil", url: DEMO_SITE_URL };

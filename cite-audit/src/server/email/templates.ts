@@ -97,6 +97,29 @@ export function auditFinishedEmail(input: {
   };
 }
 
+/** Comparaison avec les concurrents terminée (envoyé une seule fois, quand tous les audits sont finis). */
+export function comparisonReadyEmail(input: {
+  name: string;
+  companyName: string;
+  /** Concurrents analysés avec succès, sur le nombre demandé. */
+  done: number;
+  total: number;
+  url: string;
+}): EmailContent {
+  const paragraphs = [
+    `Bonjour ${input.name},`,
+    `La comparaison de ${input.companyName} avec ses concurrents est prête : ${input.done} site${input.done > 1 ? "s" : ""} analysé${input.done > 1 ? "s" : ""} sur ${input.total}.`,
+    "Elle montre, critère par critère, ce que vos concurrents font et pas vous, et vos avantages, avec la preuve observée sur leur site.",
+  ];
+  const footer =
+    "Comparaison indicative de signaux observables : ce n'est ni un classement Google ni une mesure de la visibilité dans les IA. Résultat non garanti.";
+  return {
+    subject: `Comparaison prête : ${input.companyName}`,
+    text: [...paragraphs, `Lien : ${input.url}`, footer, SIGNATURE].join("\n\n"),
+    html: layout(paragraphs, { url: input.url, label: "Voir la comparaison" }, `${footer} — ${SIGNATURE}`),
+  };
+}
+
 /** Prévient le propriétaire d'une nouvelle demande d'accès. Toutes les valeurs sont saisies par un inconnu : échappées. */
 export function accessRequestEmail(input: {
   name: string;

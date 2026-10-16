@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import type { ProjectInput } from "@/lib/validation/project";
+import { OWN_AUDIT } from "@/server/services/audits";
 
 export const MAX_PROJECTS_PER_USER = 50;
 
@@ -42,6 +43,7 @@ export async function listProjects(userId: string) {
       isDemo: true,
       createdAt: true,
       audits: {
+        where: OWN_AUDIT,
         orderBy: { queuedAt: "desc" },
         take: 1,
         select: { id: true, status: true, scoreTotal: true, finishedAt: true },

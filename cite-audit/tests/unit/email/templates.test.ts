@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getEmailEnv } from "@/lib/env";
-import { accessRequestEmail, auditFinishedEmail, inactivityWarningEmail, resetPasswordEmail, verifyEmailEmail } from "@/server/email/templates";
+import { accessRequestEmail, auditFinishedEmail, comparisonReadyEmail, inactivityWarningEmail, resetPasswordEmail, verifyEmailEmail } from "@/server/email/templates";
 import { findForbiddenWording } from "@/server/scoring/wording-guard";
 
 const url = "https://app.exemple.com/reset-password?token=abc";
@@ -37,6 +37,15 @@ describe("gabarits d'e-mails", () => {
     for (const email of [scored, unscored]) {
       for (const text of [email.subject, email.text, email.html]) expect(findForbiddenWording(text)).toEqual([]);
     }
+  });
+
+  it("comparaison prête : accords, avertissement, nom échappé", () => {
+    const one = comparisonReadyEmail({ name: "<b>Awa</b>", companyName: "Cabinet", done: 1, total: 3, url: "https://app.exemple.com/projects/p/comparaison" });
+    expect(one.text).toContain("1 site analysé sur 3");
+    expect(one.text).toContain("ni un classement Google");
+    expect(one.html).not.toContain("<b>Awa");
+    expect(comparisonReadyEmail({ name: "A", companyName: "C", done: 2, total: 2, url: "https://x.test" }).text).toContain("2 sites analysés sur 2");
+    for (const text of [one.subject, one.text, one.html]) expect(findForbiddenWording(text)).toEqual([]);
   });
 
   it("demande d'accès : valeurs saisies échappées, jamais dans l'objet", () => {

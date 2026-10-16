@@ -8,6 +8,9 @@ export const MAX_AUDITS_PER_DAY = 20;
 /** Un audit en attente depuis plus longtemps est considéré comme abandonné (worker absent). */
 export const QUEUED_STALE_MS = 30 * 60 * 1000;
 
+/** Audits du site du projet seulement (les audits de concurrents ont un comparisonId). */
+export const OWN_AUDIT = { comparisonId: null } as const;
+
 export type LaunchError = "NOT_FOUND" | "DEMO_PROJECT" | "QUOTA" | "ALREADY_RUNNING";
 
 /**
@@ -41,7 +44,7 @@ export async function requestAudit(
       where: { projectId, status: "QUEUED", queuedAt: { lt: new Date(Date.now() - QUEUED_STALE_MS) } },
       data: { status: "CANCELED", finishedAt: new Date(), errorCode: "QUEUE_TIMEOUT" },
     });
-    const pending = await tx.audit.findFirst({ where: { projectId, status: { in: ["QUEUED", "RUNNING"] } } });
+    const pending = await tx.audit.findFirst({ where: { projectId, ...OWN_AUDIT, status: { in: ["QUEUED", "RUNNING"] } } });
     if (pending) return { ok: false as const, error: "ALREADY_RUNNING" as const };
 
     const context: ScoringContext = {
@@ -68,7 +71,7 @@ export async function requestAudit(
 
 export async function listAudits(userId: string, projectId: string) {
   return prisma.audit.findMany({
-    where: { projectId, project: { userId } },
+    where: { projectId, ...OWN_AUDIT, project: { userId } },
     orderBy: { queuedAt: "desc" },
     select: {
       id: true,
@@ -90,7 +93,7 @@ export async function listAudits(userId: string, projectId: string) {
 /** Rapport d'un audit, uniquement pour le propriétaire du projet. */
 export async function getAuditReport(userId: string, auditId: string) {
   const audit = await prisma.audit.findFirst({
-    where: { id: auditId, project: { userId } },
+    where: { id: auditId, ...OWN_AUDIT, project: { userId } },
     include: { project: { select: { id: true, companyName: true, siteUrl: true, isDemo: true } } },
   });
   if (!audit) return null;
@@ -114,6 +117,7 @@ export async function getScoreHistory(userId: string, limit = 12) {
   } as const;
   const where = (isDemo: boolean) => ({
     isDemo,
+    ...OWN_AUDIT,
     scoreTotal: { not: null },
     finishedAt: { not: null },
     project: { userId },

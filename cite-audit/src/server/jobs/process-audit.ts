@@ -4,10 +4,11 @@ import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/db";
 import { crawlSite, type CrawlOptions, type SiteCrawl } from "@/server/crawler";
 import { sendEmail, type OutgoingEmail } from "@/server/email/send";
-import { auditFinishedEmail } from "@/server/email/templates";
+import { auditFinishedEmail, comparisonReadyEmail } from "@/server/email/templates";
 import { reportProgress } from "@/server/jobs/queue";
 import { scoreSite, type ScoringContext } from "@/server/scoring";
 import { saveAuditResult } from "@/server/services/audit-results";
+import { claimComparisonNotification } from "@/server/services/comparisons";
 
 export type ProcessDeps = {
   /** Exploration du site (remplaçable dans les tests). */
@@ -45,6 +46,7 @@ export async function processAudit(auditId: string, deps: ProcessDeps = {}): Pro
   const snapshot = readSnapshot(audit.inputSnapshot);
   if (!snapshot) {
     await prisma.audit.update({ where: { id: auditId }, data: { status: "FAILED", finishedAt: new Date(), errorCode: "INVALID_INPUT" } });
+    if (audit.comparisonId) await notifyComparisonReady(audit.comparisonId, deps);
     return;
   }
 
@@ -75,9 +77,9 @@ export async function processAudit(auditId: string, deps: ProcessDeps = {}): Pro
     logger.info("audit.processed", { auditId, pages: crawl.pages.length, score: result.scoreTotal });
   } catch (error) {
     await markFailed(auditId, error);
-    return;
   }
-  await notifyAuditFinished(auditId, deps);
+  if (audit.comparisonId) await notifyComparisonReady(audit.comparisonId, deps);
+  else await notifyAuditFinished(auditId, deps);
 }
 
 async function markFailed(auditId: string, error: unknown) {
@@ -118,5 +120,28 @@ async function notifyAuditFinished(auditId: string, deps: ProcessDeps): Promise<
     if (!ok) logger.error("audit.notify_failed", { auditId });
   } catch (error) {
     logger.error("audit.notify_failed", { auditId, error });
+  }
+}
+
+/**
+ * Audit d'un concurrent : un seul e-mail quand toute la comparaison est terminée (réussie ou non).
+ * Comme pour l'audit, un échec d'envoi est journalisé sans rien changer aux résultats.
+ */
+async function notifyComparisonReady(comparisonId: string, deps: ProcessDeps): Promise<void> {
+  try {
+    const comparison = await claimComparisonNotification(comparisonId);
+    if (!comparison) return;
+    const appUrl = deps.appUrl ?? getServerEnv().BETTER_AUTH_URL;
+    const content = comparisonReadyEmail({
+      name: comparison.project.user.name,
+      companyName: comparison.project.companyName,
+      done: comparison.audits.filter((a) => a.status === "SUCCEEDED" || a.status === "PARTIAL").length,
+      total: comparison.audits.length,
+      url: `${appUrl.replace(/\/$/, "")}/projects/${comparison.projectId}/comparaison`,
+    });
+    const { ok } = await (deps.sendEmail ?? sendEmail)({ to: comparison.project.user.email, ...content });
+    if (!ok) logger.error("comparison.notify_failed", { comparisonId });
+  } catch (error) {
+    logger.error("comparison.notify_failed", { comparisonId, error });
   }
 }

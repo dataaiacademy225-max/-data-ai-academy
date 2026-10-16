@@ -11,6 +11,7 @@ export type PurgeReport = {
   verifications: number;
   limits: number;
   audits: number;
+  comparisons: number;
   aiRuns: number;
   accessRequests: number;
 };
@@ -20,7 +21,8 @@ export type PurgeReport = {
  * - sessions et jetons de vérification expirés, compteurs anti-abus de plus de 24 h,
  *   demandes d'accès de plus de 12 mois : toujours ;
  * - audits et mesures IA plus anciens que la durée choisie, sauf le plus récent de chaque projet,
- *   pour qu'un projet garde toujours son dernier rapport ;
+ *   pour qu'un projet garde toujours son dernier rapport ; de même pour les comparaisons avec les concurrents
+ *   (la plus récente est gardée, leurs audits suivent en cascade) ;
  * - jamais un travail en attente ou en cours, jamais les données de démonstration (gérées par le seed).
  * Les pages analysées, recommandations et réponses IA suivent en cascade.
  */
@@ -33,14 +35,27 @@ export async function purgeExpiredData(
   const limits = await purgeExpiredLimits(now);
 
   let audits = 0;
+  let comparisons = 0;
   if (config.AUDIT_RETENTION_DAYS > 0) {
     const cutoff = new Date(now.getTime() - config.AUDIT_RETENTION_DAYS * DAY_MS);
+    // Audits du site du projet (les audits de concurrents suivent leur comparaison).
     audits = await prisma.$executeRaw`
       DELETE FROM "Audit" a
       WHERE a."queuedAt" < ${cutoff}
         AND a."isDemo" = false
+        AND a."comparisonId" IS NULL
         AND a."status" NOT IN ('QUEUED', 'RUNNING')
-        AND a."id" NOT IN (SELECT DISTINCT ON ("projectId") "id" FROM "Audit" ORDER BY "projectId", "queuedAt" DESC)`;
+        AND a."id" NOT IN (
+          SELECT DISTINCT ON ("projectId") "id" FROM "Audit"
+          WHERE "comparisonId" IS NULL
+          ORDER BY "projectId", "queuedAt" DESC
+        )`;
+    comparisons = await prisma.$executeRaw`
+      DELETE FROM "Comparison" c
+      WHERE c."createdAt" < ${cutoff}
+        AND c."isDemo" = false
+        AND NOT EXISTS (SELECT 1 FROM "Audit" a WHERE a."comparisonId" = c."id" AND a."status" IN ('QUEUED', 'RUNNING'))
+        AND c."id" NOT IN (SELECT DISTINCT ON ("projectId") "id" FROM "Comparison" ORDER BY "projectId", "createdAt" DESC)`;
   }
 
   let aiRuns = 0;
@@ -56,5 +71,5 @@ export async function purgeExpiredData(
 
   const accessRequests = await purgeAccessRequests(now);
 
-  return { sessions, verifications, limits, audits, aiRuns, accessRequests };
+  return { sessions, verifications, limits, audits, comparisons, aiRuns, accessRequests };
 }

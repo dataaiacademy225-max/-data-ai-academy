@@ -70,6 +70,7 @@ Toute requête passe par `safeFetch` (`server/crawler/safe-fetch.ts`) :
   `robots.txt` respecté pour chaque page et chaque redirection (erreur 5xx → abstention).
 - **Contenu** : jamais exécuté (analyse statique avec cheerio), jamais injecté en HTML, jamais donné comme consigne à un modèle.
 - **Responsabilité** : l'utilisateur atteste être autorisé à faire auditer le site (`ownershipAttested`).
+- **Sites concurrents** (comparaison) : mêmes protections (`safeFetch`, robots.txt, 15 pages, pauses), pages publiques seulement, 3 concurrents au plus par comparaison ; adresses validées comme celle du projet (`normalizeSiteUrl`), relues de façon défensive (`competitorsWithSite`).
 
 ## 6. Limites anti-abus
 
@@ -83,7 +84,7 @@ Toute requête passe par `safeFetch` (`server/crawler/safe-fetch.ts`) :
 | E-mail de confirmation | 3 / h par utilisateur |
 | Suppression de compte | 5 / 15 min par utilisateur |
 | Demande d'accès (formulaire public, sans compte) | 5 / h par IP, 3 / 24 h par adresse ; doublon de la même adresse dans les 24 h ignoré ; champ piège anti-robots — `server/services/access-requests.ts` |
-| Audits | 20 / 24 h par utilisateur (sauf propriétaire), un seul en cours par projet |
+| Audits | 20 / 24 h par utilisateur (sauf propriétaire), un seul en cours par projet ; chaque concurrent d'une comparaison compte pour un audit, une seule comparaison en cours par projet |
 | Module IA | `AI_MAX_QUERIES_PER_RUN` (10) et `AI_MAX_QUERIES_PER_DAY` (50) ; coût estimé et accepté avant chaque mesure |
 
 Compteurs stockés en base avec des **clés hachées** (SHA-256 : ni e-mail ni IP en clair) — `server/services/rate-limit.ts`.
@@ -104,7 +105,7 @@ et nettoie les URL (sans paramètres, identifiants ni ancre). Aucun corps de pag
 
 ## 9. Données, conservation et sauvegardes
 
-- Purge quotidienne : sessions, liens et compteurs expirés ; historique d'audits selon `AUDIT_RETENTION_DAYS` — `services/retention.ts`.
+- Purge quotidienne : sessions, liens et compteurs expirés ; historique d'audits et comparaisons avec les concurrents selon `AUDIT_RETENTION_DAYS` (le dernier de chaque projet est gardé) — `services/retention.ts`.
 - Comptes inactifs : avertissement après 3 ans, suppression 30 jours plus tard (jamais sans e-mail parti) — `services/inactive-accounts.ts`.
 - Sauvegardes : copie complète chaque nuit, **chiffrée AES-256** avant de quitter le serveur d'exécution,
   vérifiée, conservée 30 jours ; restauration uniquement dans une base neuve — `.github/workflows/db-backup.yml`,

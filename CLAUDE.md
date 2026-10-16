@@ -71,6 +71,7 @@ Migrations : `prisma migrate dev` refuse de tourner en non-interactif dès qu'il
 | `server/ai-visibility/` | Module facultatif : `types.ts` (AiProvider), `providers/`, `analyze.ts` (pur), `summary.ts` et `geo-metrics.ts` (purs : taux de mention, citations, part de voix sur l'échantillon, « non mesurée » sans concurrent suivi), `queue.ts`, `process-run.ts`. |
 | `app/(auth)/demande-acces`, `server/services/access-requests.ts`, `app/(app)/settings/demandes-acces` | Demande d'accès publique : enregistrée (12 mois), propriétaires prévenus par e-mail, aucun e-mail à l'adresse saisie ; liste réservée au propriétaire, avec synthèse par provenance (`?utm_source=…&utm_campaign=…`, transmis depuis l'accueil, `lib/acquisition.ts`) et par intérêt principal. |
 | `server/report/trend.ts` | Évolution du score d'un projet (pure) : audits notés du barème le plus récent, écart avec l'audit précédent. |
+| `server/services/comparisons.ts`, `server/report/comparison.ts`, `app/(app)/projects/[projectId]/comparaison` | Comparaison avec les concurrents : modèle `Comparison`, jusqu'à 3 audits de sites concurrents (`Audit.comparisonId`, notés avec les informations de marché du projet), un e-mail quand tout est terminé. Comparaison pure critère par critère (écarts, avantages), le non vérifié n'est jamais comparé. Les audits de concurrents sont exclus de l'historique, de la courbe et du tableau de bord (`OWN_AUDIT`). |
 | `server/demo/` | Données de démonstration. |
 | `server/email/` | Gabarits (purs) et envoi : `EMAIL_TRANSPORT` = console (dev), smtp, memory (tests). |
 | `content/legal.ts`, `app/(legal)` | Pages légales (brouillon) ; coordonnées de l'éditeur à compléter dans `LEGAL_ENTITY`. |
@@ -109,7 +110,7 @@ Tests (`cite-audit/tests`) : `unit/` (pur, crawler sur serveur local), `integrat
 - **Contenu crawlé et réponses IA** : données non fiables. Jamais exécutées, jamais injectées en HTML (`dangerouslySetInnerHTML` interdit), jamais traitées comme instructions par un LLM.
 - **Journaux** : passer par `logger` (masquage des URL, e-mails, jetons). Ne jamais y écrire de corps de page, de réponse IA ni de clé.
 - **Limites anti-abus** :
-  - audits : 20 par utilisateur sur 24 h, un seul en cours par projet ;
+  - audits : 20 par utilisateur sur 24 h (chaque concurrent d'une comparaison compte pour un), un seul en cours par projet ; une seule comparaison en cours par projet, 3 concurrents au plus ;
   - IA : `AI_MAX_QUERIES_PER_RUN` et `AI_MAX_QUERIES_PER_DAY` ;
   - crawl : 15 pages, 0,5 s entre deux pages, 2 min 30 au plus ;
   - tentatives (connexion, double authentification, inscription, mot de passe oublié, suppression de compte, demande d'accès) : `services/rate-limit.ts`, en base, clés hachées. Les server actions appellent Better Auth directement et contournent sa propre limite HTTP : toute nouvelle action sensible doit appeler `consumeLimit`.

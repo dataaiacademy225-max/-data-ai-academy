@@ -135,6 +135,7 @@ model Project {
   updatedAt           DateTime          @updatedAt
   audits              Audit[]
   aiRuns              AiVisibilityRun[]
+  comparisons         Comparison[]
 
   // Permet la clé étrangère composite Audit(projectId, isDemo) → Project(id, isDemo).
   // Permet les clés étrangères composites (projectId, isDemo) des audits et des lancements IA.
@@ -168,11 +169,33 @@ model Audit {
   inputSnapshot   Json // copie des données du projet au lancement
   reportSnapshot  Json?
   errorCode       String?
+  /// Renseignés seulement pour l'audit d'un site concurrent (null = le site du projet).
+  comparisonId    String?
+  comparison      Comparison?    @relation(fields: [comparisonId], references: [id], onDelete: Cascade)
+  competitorName  String?
+  competitorUrl   String?
   pages           PageAnalysis[]
   findings        Finding[]
 
   @@index([projectId, queuedAt])
   @@index([status, queuedAt])
+  @@index([comparisonId])
+}
+
+/// Comparaison avec les concurrents : un lancement regroupe jusqu'à 3 audits de sites concurrents,
+/// notés avec les informations de marché du projet (secteur, cible, ville, questions clés).
+model Comparison {
+  id         String    @id @default(cuid())
+  projectId  String
+  // Même garantie que pour les audits : démonstration et réel ne se mélangent jamais.
+  isDemo     Boolean   @default(false)
+  project    Project   @relation(fields: [projectId, isDemo], references: [id, isDemo], onDelete: Cascade, onUpdate: Cascade)
+  createdAt  DateTime  @default(now())
+  /// E-mail « comparaison prête » envoyé (une seule fois, quand tous les audits sont terminés).
+  notifiedAt DateTime?
+  audits     Audit[]
+
+  @@index([projectId, createdAt])
 }
 
 model PageAnalysis {

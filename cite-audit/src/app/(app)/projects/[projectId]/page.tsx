@@ -93,6 +93,17 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
         </p>
       </Link>
 
+      <Link
+        href={`/projects/${project.id}/comparaison`}
+        className="block rounded-md border border-border bg-card p-4 hover:bg-muted"
+      >
+        <p className="font-semibold">Comparaison avec vos concurrents →</p>
+        <p className="text-sm text-muted-foreground">
+          Le même audit CITE sur vos concurrents, côte à côte : ce qu&apos;ils font et pas vous, et vos avantages.
+          Comparaison indicative de signaux observables.
+        </p>
+      </Link>
+
       <ScoreTrendCard trend={buildScoreTrend(audits)} />
 
       <section className="space-y-3">

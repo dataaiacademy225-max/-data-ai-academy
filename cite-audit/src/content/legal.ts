@@ -131,6 +131,11 @@ export function legalPages(params: LegalParams): Record<LegalSlug, LegalPage> {
             "Compte et projets : jusqu'à leur suppression par vous (bouton « Supprimer » dans les paramètres du projet ou dans « Mon compte »). La suppression est immédiate et définitive.",
             inactiveAccountRule(inactiveDays, graceDays),
             historyRetention("Audits", params.auditRetentionDays, "le dernier audit de chaque projet est toujours gardé."),
+            historyRetention(
+              "Audits des sites concurrents (comparaisons)",
+              params.auditRetentionDays,
+              "la dernière comparaison de chaque projet est toujours gardée.",
+            ),
             historyRetention("Mesures de visibilité IA et réponses reçues", params.aiRunRetentionDays, "la dernière mesure de chaque projet est toujours gardée."),
             "Sessions de connexion : 7 jours au plus. Lien de changement de mot de passe : 1 heure. Lien de confirmation d'adresse : 24 heures.",
             "Double authentification : clé et codes de secours conservés jusqu'à sa désactivation ou la suppression du compte. Vérification du code après le mot de passe : 10 minutes au plus.",
@@ -209,12 +214,13 @@ export function legalPages(params: LegalParams): Record<LegalSlug, LegalPage> {
           title: "Fonctionnement de l'analyse",
           paragraphs: [
             "L'analyse lit au plus 15 pages publiques par audit, respecte les règles robots.txt du site et fait une pause entre deux pages. Une page non analysée ou inaccessible est indiquée « non vérifiée », jamais « absente ».",
+            "Comparaison avec les concurrents : les sites que vous indiquez comme concurrents sont analysés de la même façon (pages publiques uniquement, sans identifiant ni formulaire, robots.txt respecté), au plus 3 par comparaison. Le résultat est une comparaison indicative de signaux observables, réservée à votre usage : ce n'est ni un classement Google ni une mesure de leur visibilité dans les IA.",
           ],
         },
         {
           title: "Limites d'usage",
           paragraphs: [
-            "Pour protéger le service et les sites analysés : 20 audits par compte sur 24 heures, un seul audit en cours par projet, et un nombre limité de requêtes IA par mesure et par jour.",
+            "Pour protéger le service et les sites analysés : 20 audits par compte sur 24 heures (chaque concurrent d'une comparaison compte pour un audit), un seul audit et une seule comparaison en cours par projet, et un nombre limité de requêtes IA par mesure et par jour.",
           ],
         },
         {
