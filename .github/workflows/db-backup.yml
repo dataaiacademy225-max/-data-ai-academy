@@ -100,7 +100,7 @@ jobs:
 
       - name: Conserver la copie chiffrée (30 jours)
         if: steps.config.outputs.enabled == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.BACKUP_NAME }}
           path: backup/${{ env.BACKUP_NAME }}.dump.gpg
