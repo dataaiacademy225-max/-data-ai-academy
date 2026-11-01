@@ -75,7 +75,7 @@ jobs:
           fi
 
       - name: Récupérer la sauvegarde chiffrée
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           run-id: ${{ inputs.backup_run_id }}
           github-token: ${{ github.token }}
